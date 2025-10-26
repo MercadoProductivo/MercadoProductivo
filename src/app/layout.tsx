@@ -13,10 +13,25 @@ import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 import NotificationsProvider from "@/providers/notifications-provider";
 import SWRegister from "@/components/pwa/sw-register";
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
+export const metadata: Metadata = {
+  title: "Mercado Productivo",
+  description: "Plataforma que conecta vendedores con compradores",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#f06d04",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192.png", sizes: "192x192" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Mercado Productivo",
+  },
 };
 
 const inter = Inter({ subsets: ["latin"] });

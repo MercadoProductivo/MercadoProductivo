@@ -1,23 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { LogOut, MessageSquare } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { normalizeRoleFromMetadata } from "@/lib/auth/role";
-import { MenuActionButton } from "@/components/ui/menu-buttons";
-import { MAIN_NAV } from "@/config/navigation";
-import { useNotifications } from "@/providers/notifications-provider";
-import PWAInstallButton from "@/components/pwa/pwa-install-button";
+import { Logo } from "@/components/ui/logo";
 
 export default function SiteHeader() {
   const [user, setUser] = useState<User | null>(null);
