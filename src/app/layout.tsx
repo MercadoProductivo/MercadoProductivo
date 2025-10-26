@@ -14,24 +14,48 @@ import NotificationsProvider from "@/providers/notifications-provider";
 import SWRegister from "@/components/pwa/sw-register";
 
 export const metadata: Metadata = {
-  title: "Mercado Productivo",
+  title: {
+    default: "Mercado Productivo",
+    template: "%s | Mercado Productivo"
+  },
   description: "Plataforma que conecta vendedores con compradores",
   manifest: "/manifest.webmanifest",
   themeColor: "#f06d04",
   icons: {
     icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
       { url: "/icons/icon-192.png", sizes: "192x192" },
     ],
+    shortcut: "/favicon.svg",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Mercado Productivo",
   },
+  openGraph: {
+    type: "website",
+    title: "Mercado Productivo",
+    description: "Plataforma que conecta vendedores con compradores",
+    siteName: "Mercado Productivo",
+    locale: "es_ES",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Mercado Productivo",
+    description: "Plataforma que conecta vendedores con compradores",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const inter = Inter({ subsets: ["latin"] });
