@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch: {}
+
+# Evitar ejecuciones simultáneas por rama que puedan interferir y causar bloqueos
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Configurar permisos para el job
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Limitar ejecución para evitar "step still running" indefinido
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+      CI: true
+      NODE_OPTIONS: --max-old-space-size=4096
+      
+      # Solo variables esenciales para el build de Next.js + Supabase
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      
+      # Alias para compatibilidad (opcional, eliminar si no se usa)
+      SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          # Usar npm ci para instalación limpia, si falla, hacer npm install
+          npm ci --no-audit --prefer-offline || npm install --no-audit --prefer-offline
+
+      - name: Verificar variables de entorno
+        run: |
+          echo "Verificando variables de entorno..."
+          missing=0
+          for var in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!var}" ]; then
+              echo "Error: $var no está definido"
+              missing=1
+            else
+              echo "$var OK"
+            fi
+          done
+          # Variables opcionales para Web Push
+          for var in NEXT_PUBLIC_VAPID_PUBLIC_KEY VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY; do
+            if [ -z "${!var}" ]; then
+              echo "Aviso: $var no está definido (Web Push opcional)"
+            else
+              echo "$var OK"
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build
+        run: |
+          npm run build
+          # Verificar que la build se completó correctamente
+          if [ -d ".next" ]; then
+            echo "Build completado exitosamente"
+            ls -la .next/
+          else
+            echo "Error: La carpeta .next no fue generada"
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            .next/
+            public/
+            package.json
+            package-lock.json
+          retention-days: 1

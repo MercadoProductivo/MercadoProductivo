@@ -1,0 +1,307 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { z } from "zod";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
+
+function planCodeToLabel(code?: string | null) {
+  const c = String(code || "").toLowerCase();
+  if (c === "free" || c === "basic") return "Básico";
+  if (c === "plus" || c === "enterprise") return "Plus";
+  if (c === "premium" || c === "pro") return "Premium";
+  return "Básico";
+}
+
+// Normaliza el teléfono a formato internacional simple (WhatsApp-friendly):
+// - elimina no dígitos
+// - remueve prefijo internacional 00 si existe
+// - si country=AR y no empieza con 54, lo antepone
+// - retorna string vacío si queda demasiado corto
+function normalizePhoneInternational(raw?: string | null, country?: string | null): string {
+  const digitsOnly = String(raw || "").replace(/\D/g, "");
+  if (!digitsOnly) return "";
+  let d = digitsOnly.replace(/^00/, "");
+  const c = String(country || "").trim().toUpperCase();
+  // Heurística suave para Argentina
+  if (c === "AR" || /argentina/i.test(String(country || ""))) {
+    if (!d.startsWith("54") && d.length >= 8 && d.length <= 12) {
+      d = `54${d}`;
+    }
+  }
+  return d.length >= 8 ? d : "";
+}
+
+const uuidSchema = z.string().uuid();
+
+export async function GET(_req: Request, ctx: { params: { id: string } }) {
+  try {
+    const rawId = ctx?.params?.id;
+    if (!rawId) {
+      return NextResponse.json({ error: "MISSING_ID", message: "Falta el parámetro id" }, { status: 400 });
+    }
+
+    // Validar que el ID sea un UUID válido
+    const validation = uuidSchema.safeParse(rawId);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "INVALID_ID", message: "El ID debe ser un UUID válido" },
+        { status: 400 }
+      );
+    }
+
+    const id = validation.data;
+
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !serviceKey) {
+      return NextResponse.json(
+        {
+          error: "MISSING_ENV",
+          message: "Faltan variables de entorno para Supabase (URL o SERVICE_ROLE_KEY)",
+          hasUrl: !!url,
+          hasServiceKey: !!serviceKey,
+        },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createAdminClient();
+
+    // Intentar obtener desde la vista optimizada con estadísticas
+    const viewCols = [
+      "seller_id",
+      "first_name",
+      "last_name",
+      "full_name",
+      "company",
+      "city",
+      "province",
+      "avatar_url",
+      "plan_code",
+      "joined_at",
+      "products_count",
+      "updated_at",
+    ].join(", ");
+
+    const { data: viewRow, error: viewError } = await supabase
+      .from("v_seller_stats")
+      .select(viewCols)
+      .eq("seller_id", id)
+      .single();
+
+    if (!viewError && viewRow) {
+      const row: any = viewRow;
+      const first = (row.first_name || "").trim();
+      const last = (row.last_name || "").trim();
+      const full_name = (row.full_name || `${first} ${last}`.trim()) || "Vendedor";
+      const location = row.city && row.province ? `${row.city}, ${row.province}` : null;
+      const plan_code = row.plan_code ?? null;
+      let plan_label = planCodeToLabel(plan_code);
+      if (plan_code) {
+        const { data: planRow } = await supabase
+          .from("plans")
+          .select("name")
+          .ilike("code", plan_code)
+          .single();
+        if (planRow?.name) plan_label = planRow.name;
+      }
+
+      // Conteo de likes agregado por vista
+      let likes_count = 0;
+      {
+        const { data: likeRows } = await supabase
+          .from("v_profile_likes_count")
+          .select("likes_count")
+          .eq("seller_id", id)
+          .limit(1);
+        likes_count = likeRows?.[0]?.likes_count ?? 0;
+      }
+
+      // Recalcular conteo de productos publicados (la vista puede no aplicar el filtro)
+      const { count: published_products_count } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", id)
+        .eq("published", true);
+
+      // Obtener teléfono desde profiles para normalizarlo (la vista puede no exponerlo)
+      let phone: string | null = null;
+      {
+        let pr: any = null;
+        let err: any = null;
+        {
+          const res = await supabase
+            .from("profiles")
+            .select("phone, country")
+            .eq("id", id)
+            .single();
+          pr = res.data; err = res.error;
+        }
+        if (err && /country|column|does not exist/i.test(err?.message || "")) {
+          const res2 = await supabase
+            .from("profiles")
+            .select("phone")
+            .eq("id", id)
+            .single();
+          pr = res2.data;
+        }
+        const raw = pr?.phone ?? null;
+        phone = normalizePhoneInternational(raw, pr?.country ?? null) || null;
+      }
+
+      return NextResponse.json(
+        {
+          seller: {
+            id,
+            first_name: row.first_name ?? null,
+            last_name: row.last_name ?? null,
+            full_name,
+            company: row.company ?? null,
+            city: row.city ?? null,
+            province: row.province ?? null,
+            location,
+            avatar_url: row.avatar_url ?? null,
+            created_at: row.joined_at ?? row.updated_at ?? null,
+            joined_at: row.joined_at ?? null,
+            plan_code: row.plan_code ?? null,
+            plan_label,
+            products_count: published_products_count || 0,
+            likes_count,
+            phone,
+          },
+        },
+        { headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    // Fallback a profiles + conteo de productos (compatibilidad)
+    let profCols = [
+      "id",
+      "first_name",
+      "last_name",
+      "full_name",
+      "company",
+      "city",
+      "province",
+      "avatar_url",
+      "updated_at",
+      "plan_activated_at",
+      "plan_code",
+      "phone",
+      "country",
+    ].join(", ");
+
+    let dataSafe: any = null;
+    let errorSafe: any = null;
+    {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(profCols)
+        .eq("id", id)
+        .single();
+      dataSafe = data; errorSafe = error;
+    }
+    if (errorSafe && /country|column|does not exist/i.test(errorSafe?.message || "")) {
+      profCols = [
+        "id",
+        "first_name",
+        "last_name",
+        "full_name",
+        "company",
+        "city",
+        "province",
+        "avatar_url",
+        "updated_at",
+        "plan_activated_at",
+        "plan_code",
+        "phone",
+      ].join(", ");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select(profCols)
+        .eq("id", id)
+        .single();
+      dataSafe = data; errorSafe = error;
+    }
+
+    if (errorSafe) {
+      return NextResponse.json(
+        { error: "QUERY_ERROR", message: (errorSafe as any)?.message || "No se pudo obtener el perfil del vendedor" },
+        { status: 500 }
+      );
+    }
+
+    if (!dataSafe) {
+      return NextResponse.json({ error: "NOT_FOUND", message: "Vendedor no encontrado" }, { status: 404 });
+    }
+
+    const row = dataSafe as any;
+    const first = (row.first_name || "").trim();
+    const last = (row.last_name || "").trim();
+    const full_name = (row.full_name || `${first} ${last}`.trim()) || "Vendedor";
+    const location = row.city && row.province ? `${row.city}, ${row.province}` : null;
+    const plan_code = row.plan_code ?? null;
+    let plan_label = planCodeToLabel(plan_code);
+    if (plan_code) {
+      const { data: planRow } = await supabase
+        .from("plans")
+        .select("name")
+        .ilike("code", plan_code)
+        .single();
+      if (planRow?.name) plan_label = planRow.name;
+    }
+    const created_at = row.plan_activated_at ?? row.updated_at ?? null;
+
+    // Normalizar teléfono desde profiles
+    const phoneOut = normalizePhoneInternational(row.phone ?? null, row.country ?? null) || null;
+
+    // Conteo de productos
+    const { count: products_count } = await supabase
+      .from("products")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", id)
+      .eq("published", true);
+
+    // Conteo de likes
+    let likes_count = 0;
+    {
+      const { data: likeRows } = await supabase
+        .from("v_profile_likes_count")
+        .select("likes_count")
+        .eq("seller_id", id)
+        .limit(1);
+      likes_count = likeRows?.[0]?.likes_count ?? 0;
+    }
+
+    return NextResponse.json(
+      {
+        seller: {
+          id: row.id,
+          first_name: row.first_name ?? null,
+          last_name: row.last_name ?? null,
+          full_name,
+          company: row.company ?? null,
+          city: row.city ?? null,
+          province: row.province ?? null,
+          location,
+          avatar_url: row.avatar_url ?? null,
+          created_at,
+          joined_at: created_at,
+          plan_code: row.plan_code ?? null,
+          plan_label,
+          products_count: products_count || 0,
+          likes_count,
+          phone: phoneOut,
+        },
+      },
+      {
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || "Error inesperado" }, { status: 500 });
+  }
+}
+
