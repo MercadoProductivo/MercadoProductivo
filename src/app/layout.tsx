@@ -23,17 +23,17 @@ export const metadata: Metadata = {
   themeColor: "#f06d04",
   icons: {
     icon: [
-      { url: "/mp-logo.svg", type: "image/svg+xml" },
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/mp-logo.svg?v=20251026", type: "image/svg+xml" },
+      { url: "/icon.svg?v=20251026", type: "image/svg+xml" },
+      { url: "/favicon.svg?v=20251026", type: "image/svg+xml" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/mp-logo.svg", type: "image/svg+xml" },
+      { url: "/mp-logo.svg?v=20251026", type: "image/svg+xml" },
       { url: "/icons/icon-192.png", sizes: "192x192" },
     ],
-    shortcut: "/mp-logo.svg",
+    shortcut: "/mp-logo.svg?v=20251026",
   },
   appleWebApp: {
     capable: true,
