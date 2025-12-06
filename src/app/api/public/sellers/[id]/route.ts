@@ -35,9 +35,9 @@ function normalizePhoneInternational(raw?: string | null, country?: string | nul
 
 const uuidSchema = z.string().uuid();
 
-export async function GET(_req: Request, ctx: { params: { id: string } }) {
+export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const rawId = ctx?.params?.id;
+    const { id: rawId } = await ctx.params;
     if (!rawId) {
       return NextResponse.json({ error: "MISSING_ID", message: "Falta el parámetro id" }, { status: 400 });
     }

@@ -17,8 +17,8 @@ function getSizeFromIconName(name: string): { width: number; height: number; mas
   }
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { icon: string } }) {
-  const { icon } = params;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ icon: string }> }) {
+  const { icon } = await params;
   const { width, height } = getSizeFromIconName(icon);
   // Icono naranja con letras MP en blanco, sin usar JSX (para permitir .ts)
   const element = React.createElement(

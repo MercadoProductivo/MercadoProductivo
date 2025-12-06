@@ -12,6 +12,7 @@ import ProductsGrid from "@/components/marketplace/products-grid";
 import { Separator } from "@/components/ui/separator";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function MarketplaceView() {
   const [filters, setFilters] = useState<ProductFiltersType>({
@@ -242,7 +243,7 @@ export default function MarketplaceView() {
           {user ? (
             isVendor ? (
               <div className="flex justify-center">
-                <a
+                <Link
                   href="/dashboard/products/new"
                   className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md bg-white text-orange-600 hover:bg-orange-50 transition-colors"
                 >
@@ -259,7 +260,7 @@ export default function MarketplaceView() {
                     />
                   </svg>
                   Publicar ahora
-                </a>
+                </Link>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

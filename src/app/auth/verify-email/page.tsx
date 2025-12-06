@@ -5,8 +5,9 @@ export const metadata = {
   title: "Verifica tu correo | Mercado Productivo",
 };
 
-export default function Page({ searchParams }: { searchParams?: { email?: string } }) {
-  const email = searchParams?.email;
+export default async function Page({ searchParams }: { searchParams?: Promise<{ email?: string }> }) {
+  const sp = await searchParams;
+  const email = sp?.email;
   return (
     <AuthCard
       title="Verifica tu correo"

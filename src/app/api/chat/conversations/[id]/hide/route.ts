@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
-export async function POST(_req: Request, ctx: { params: { id: string } }) {
+export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (process.env.FEATURE_CHAT_V2_ENABLED !== "true") {
     return NextResponse.json(
       { error: "CHAT_DESHABILITADO", message: "El sistema de chat v2 está temporalmente deshabilitado." },
@@ -14,7 +14,8 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
     );
   }
   try {
-    const conversationId = String(ctx.params.id || "");
+    const { id } = await ctx.params;
+    const conversationId = String(id || "");
     const supabase = createRouteClient();
     const {
       data: { user },
@@ -52,7 +53,7 @@ export async function POST(_req: Request, ctx: { params: { id: string } }) {
   }
 }
 
-export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
+export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (process.env.FEATURE_CHAT_V2_ENABLED !== "true") {
     return NextResponse.json(
       { error: "CHAT_DESHABILITADO", message: "El sistema de chat v2 está temporalmente deshabilitado." },
@@ -60,7 +61,8 @@ export async function DELETE(_req: Request, ctx: { params: { id: string } }) {
     );
   }
   try {
-    const conversationId = String(ctx.params.id || "");
+    const { id } = await ctx.params;
+    const conversationId = String(id || "");
     const supabase = createRouteClient();
     const {
       data: { user },

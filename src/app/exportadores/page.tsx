@@ -15,10 +15,11 @@ const PAGE_SIZE = 20; // 4 x 5
 export default async function ExportadoresPage({
   searchParams,
 }: {
-  searchParams?: { page?: string };
+  searchParams?: Promise<{ page?: string }>;
 }) {
-  const page = Math.max(1, parseInt(searchParams?.page || "1", 10) || 1);
-  const hdrs = headers();
+  const sp = await searchParams;
+  const page = Math.max(1, parseInt(sp?.page || "1", 10) || 1);
+  const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host");
   const proto = hdrs.get("x-forwarded-proto") || "http";
   const baseUrl = host ? `${proto}://${host}` : "";

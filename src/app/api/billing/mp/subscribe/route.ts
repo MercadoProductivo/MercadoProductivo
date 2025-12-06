@@ -8,10 +8,10 @@ import { checkRateLimit } from "@/lib/rate-limit-kv";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function getBaseUrl() {
+async function getBaseUrl() {
   const envSite = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (envSite) return envSite.replace(/\/$/, "");
-  const h = headers();
+  const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   if (!host) return "";
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
   const amountRounded = Math.round(selectedPrice * 100) / 100;
   const currency = ((plan as any).currency || "ARS").toUpperCase();
 
-    const siteUrl = getBaseUrl();
+    const siteUrl = await getBaseUrl();
     const successUrl = body?.success_url || (siteUrl ? `${siteUrl}/dashboard/plan/success` : "/dashboard/plan/success");
     const failureUrl = body?.failure_url || (siteUrl ? `${siteUrl}/dashboard/plan/failure` : "/dashboard/plan/failure");
 

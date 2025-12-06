@@ -29,7 +29,7 @@ function normalizeAvatarUrl(raw: string | null | undefined, supabase: any): stri
 
 const uuidSchema = z.string().uuid();
 
-export async function GET(req: Request, ctx: { params: { id: string } }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (process.env.FEATURE_CHAT_V2_ENABLED !== "true") {
     return NextResponse.json(
       { error: "CHAT_DESHABILITADO", message: "El sistema de chat v2 está temporalmente deshabilitado." },
@@ -37,8 +37,9 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
     );
   }
   try {
+    const { id } = await ctx.params;
     // Validar UUID
-    const validation = uuidSchema.safeParse(ctx.params.id);
+    const validation = uuidSchema.safeParse(id);
     if (!validation.success) {
       return NextResponse.json(
         { error: "INVALID_CONVERSATION_ID", message: "ID de conversación inválido" },
@@ -147,7 +148,7 @@ export async function GET(req: Request, ctx: { params: { id: string } }) {
   }
 }
 
-export async function POST(req: Request, ctx: { params: { id: string } }) {
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (process.env.FEATURE_CHAT_V2_ENABLED !== "true") {
     return NextResponse.json(
       { error: "CHAT_DESHABILITADO", message: "El sistema de chat v2 está temporalmente deshabilitado." },
@@ -155,8 +156,9 @@ export async function POST(req: Request, ctx: { params: { id: string } }) {
     );
   }
   try {
+    const { id } = await ctx.params;
     // Validar UUID
-    const validation = uuidSchema.safeParse(ctx.params.id);
+    const validation = uuidSchema.safeParse(id);
     if (!validation.success) {
       return NextResponse.json(
         { error: "INVALID_CONVERSATION_ID", message: "ID de conversación inválido" },

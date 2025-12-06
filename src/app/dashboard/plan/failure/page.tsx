@@ -5,18 +5,19 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type Props = { searchParams?: Record<string, string | string[] | undefined> };
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 function getParam(v: string | string[] | undefined) {
   return typeof v === "string" ? v : Array.isArray(v) ? v[0] : undefined;
 }
 
-export default function FailurePage({ searchParams }: Props) {
-  const error = getParam(searchParams?.error) || "ERROR";
+export default async function FailurePage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const error = getParam(sp?.error) || "ERROR";
   const message = (error || "").toString().replace(/[_-]/g, " ");
-  const effectiveAt = getParam(searchParams?.effective_at);
-  const pending = getParam(searchParams?.pending);
-  const detailParam = getParam(searchParams?.detail);
+  const effectiveAt = getParam(sp?.effective_at);
+  const pending = getParam(sp?.pending);
+  const detailParam = getParam(sp?.detail);
   let detailPretty: string | undefined = undefined;
   if (detailParam) {
     try {

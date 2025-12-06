@@ -13,8 +13,9 @@ export const revalidate = 0;
 export default async function ProductDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = createClient();
   const {
     data: { user },
@@ -32,7 +33,7 @@ export default async function ProductDetailPage({
       .select(
         "id,user_id,title,description,category,price,quantity_value,quantity_unit,created_at,location,featured_until"
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
     product = data;
     error = err;
@@ -44,7 +45,7 @@ export default async function ProductDetailPage({
       .select(
         "id,user_id,title,description,category,price,quantity_value,quantity_unit,created_at,location,featured_until"
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id)
       .single();
     product = data;

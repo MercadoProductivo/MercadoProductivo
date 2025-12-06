@@ -8,15 +8,16 @@ export const metadata = {
   title: "Iniciar sesión | Mercado Productivo",
 };
 
-export default async function Page({ searchParams }: { searchParams?: { verified?: string; check_email?: string; email?: string } }) {
+export default async function Page({ searchParams }: { searchParams?: Promise<{ verified?: string; check_email?: string; email?: string }> }) {
+  const sp = await searchParams;
   const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
     redirect("/");
   }
-  const showVerified = searchParams?.verified === "1";
-  const showCheckEmail = searchParams?.check_email === "1";
-  const email = searchParams?.email;
+  const showVerified = sp?.verified === "1";
+  const showCheckEmail = sp?.check_email === "1";
+  const email = sp?.email;
   return (
     <Card className="w-full shadow-lg">
       <CardHeader className="space-y-1">

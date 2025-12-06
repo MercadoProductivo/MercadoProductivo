@@ -1,7 +1,7 @@
 import Link from "next/link";
 
-export default function CatalogDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default async function CatalogDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   return (
     <main className="container mx-auto p-4 space-y-4">
       <div>

@@ -26,8 +26,9 @@ interface Service {
   user_id: string;
 }
 
-export default async function EditServicePage({ params }: { params: { id: string } }) {
-  if (!params?.id || typeof params.id !== "string") notFound();
+export default async function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  if (!id || typeof id !== "string") notFound();
 
   const supabase = createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -41,7 +42,7 @@ export default async function EditServicePage({ params }: { params: { id: string
     const { data, error } = await supabase
       .from("services")
       .select("id,title,description,price,category,location,province,city,origin_province,origin_city,dest_province,dest_city,featured_until,created_at,user_id")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
     service = (data as any) as Service | null;
     svcError = error;
@@ -51,7 +52,7 @@ export default async function EditServicePage({ params }: { params: { id: string
     const { data, error } = await supabase
       .from("services")
       .select("id,title,description,price,category,location,province,city,origin_province,origin_city,dest_province,dest_city,featured_until,created_at,user_id")
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user!.id)
       .single();
     service = (data as any) as Service | null;

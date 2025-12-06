@@ -37,10 +37,11 @@ interface Profile {
 export default async function EditProductPage({ 
   params 
 }: { 
-  params: { id: string } 
+  params: Promise<{ id: string }> 
 }) {
+  const { id } = await params;
   // Validar parámetro ID
-  if (!params?.id || typeof params.id !== 'string') {
+  if (!id || typeof id !== 'string') {
     notFound();
   }
 
@@ -64,7 +65,7 @@ export default async function EditProductPage({
       const { data, error } = await supabase
         .from('products')
         .select('id,title,description,price,category,location,quantity_value,quantity_unit,featured_until,created_at,user_id')
-        .eq('id', params.id)
+        .eq('id', id)
         .single();
       product = (data as any) as Product | null;
       productError = error;
@@ -74,7 +75,7 @@ export default async function EditProductPage({
       const { data, error } = await supabase
         .from('products')
         .select('id,title,description,price,category,location,quantity_value,quantity_unit,featured_until,created_at,user_id')
-        .eq('id', params.id)
+        .eq('id', id)
         .eq('user_id', user.id)
         .single();
       product = (data as any) as Product | null;

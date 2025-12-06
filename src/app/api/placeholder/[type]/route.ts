@@ -10,8 +10,8 @@ const MAP: Record<string, { text: string; bg: string }> = {
   default: { text: "Mercado Productivo", bg: "linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)" },
 };
 
-export function GET(_req: NextRequest, { params }: { params: { type: string } }) {
-  const { type } = params;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ type: string }> }) {
+  const { type } = await params;
   const { text, bg } = MAP[type] ?? MAP.default;
   const width = 1200;
   const height = 400;

@@ -1,7 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { isRedirectError } from "next/dist/client/components/redirect";
+
+// Helper para detectar errores de redirect de Next.js
+function isRedirectError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as any).digest === "string" &&
+    (error as any).digest.startsWith("NEXT_REDIRECT")
+  );
+}
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,10 +19,10 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function getBaseUrl() {
+async function getBaseUrl() {
   const env = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (env) return env.replace(/\/$/, "");
-  const h = headers();
+  const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   return host ? `${proto}://${host}` : "";
@@ -26,23 +36,24 @@ function formatCurrency(value: number, currency: string) {
   }
 }
 
-type Props = { searchParams?: Record<string, string | string[] | undefined> };
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function SubscribePage({ searchParams }: Props) {
+  const sp = await searchParams;
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const raw = searchParams?.code;
+  const raw = sp?.code;
   const code = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
   if (!code) redirect("/dashboard/plan/failure?error=MISSING_CODE");
 
-  const intervalRaw = searchParams?.interval;
+  const intervalRaw = sp?.interval;
   const intervalParam = typeof intervalRaw === "string" ? intervalRaw : Array.isArray(intervalRaw) ? intervalRaw[0] : undefined;
   const isValidInterval = intervalParam === "monthly" || intervalParam === "yearly";
 
-  const baseUrl = getBaseUrl();
-  const cookieStore = cookies();
+  const baseUrl = await getBaseUrl();
+  const cookieStore = await cookies();
   const cookieHeader = cookieStore.getAll().map(c => `${c.name}=${c.value}`).join("; ");
   const successUrl = `${baseUrl}/dashboard/plan/success`;
   const failureUrl = `${baseUrl}/dashboard/plan/failure`;

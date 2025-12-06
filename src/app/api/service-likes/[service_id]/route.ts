@@ -7,9 +7,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
-export async function GET(_req: Request, ctx: { params: { service_id: string } }) {
+export async function GET(_req: Request, ctx: { params: Promise<{ service_id: string }> }) {
   try {
-    const serviceId = ctx?.params?.service_id;
+    const { service_id } = await ctx.params;
+    const serviceId = service_id;
     if (!serviceId) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
 
     const supabase = createRouteClient();
@@ -36,16 +37,16 @@ export async function GET(_req: Request, ctx: { params: { service_id: string } }
     return NextResponse.json({ likes_count, liked });
   } catch (e: any) {
     logger.error("GET /api/service-likes/[service_id] failed", {
-      service_id: ctx?.params?.service_id,
       error: e?.message,
     });
     return NextResponse.json({ error: e?.message || "Unexpected error" }, { status: 500 });
   }
 }
 
-export async function POST(_req: Request, ctx: { params: { service_id: string } }) {
+export async function POST(_req: Request, ctx: { params: Promise<{ service_id: string }> }) {
   try {
-    const serviceId = ctx?.params?.service_id;
+    const { service_id } = await ctx.params;
+    const serviceId = service_id;
     if (!serviceId) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
 
     const supabase = createRouteClient();
@@ -113,7 +114,6 @@ export async function POST(_req: Request, ctx: { params: { service_id: string } 
     return NextResponse.json({ liked, likes_count });
   } catch (e: any) {
     console.error("[/api/service-likes] POST error", {
-      serviceId: ctx?.params?.service_id,
       message: e?.message,
       stack: e?.stack,
     });

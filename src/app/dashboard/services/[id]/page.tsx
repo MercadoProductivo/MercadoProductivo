@@ -9,7 +9,8 @@ import { ProductGallery } from "@/components/products/product-gallery";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function ServiceDetailDashboardPage({ params }: { params: { id: string } }) {
+export default async function ServiceDetailDashboardPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
@@ -21,7 +22,7 @@ export default async function ServiceDetailDashboardPage({ params }: { params: {
     const { data, error } = await supabase
       .from("services")
       .select("id,user_id,title,description,category,price,created_at,location,featured_until")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
     service = data;
     svcError = error;
@@ -32,7 +33,7 @@ export default async function ServiceDetailDashboardPage({ params }: { params: {
     const { data, error } = await supabase
       .from("services")
       .select("id,user_id,title,description,category,price,created_at,location,featured_until")
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id)
       .single();
     service = data;

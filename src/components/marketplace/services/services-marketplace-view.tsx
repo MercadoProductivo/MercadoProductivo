@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function ServicesMarketplaceView() {
   const [filters, setFilters] = useState<ServiceFiltersType>({
@@ -165,7 +166,7 @@ export default function ServicesMarketplaceView() {
           {user ? (
             isVendor ? (
               <div className="flex justify-center">
-                <a
+                <Link
                   href="/dashboard/services/new"
                   className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md bg-white text-orange-600 hover:bg-orange-50 transition-colors"
                 >
@@ -182,7 +183,7 @@ export default function ServicesMarketplaceView() {
                     />
                   </svg>
                   Publicar servicio
-                </a>
+                </Link>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

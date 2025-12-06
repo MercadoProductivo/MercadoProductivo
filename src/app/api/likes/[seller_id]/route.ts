@@ -19,9 +19,10 @@ function isPaidPlan(plan?: string | null) {
   );
 }
 
-export async function GET(_req: Request, ctx: { params: { seller_id: string } }) {
+export async function GET(_req: Request, ctx: { params: Promise<{ seller_id: string }> }) {
   try {
-    const sellerId = ctx?.params?.seller_id;
+    const { seller_id } = await ctx.params;
+    const sellerId = seller_id;
     if (!sellerId) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
 
     const supabase = createRouteClient();
@@ -48,16 +49,16 @@ export async function GET(_req: Request, ctx: { params: { seller_id: string } })
     return NextResponse.json({ likes_count, liked });
   } catch (e: any) {
     logger.error("GET /api/likes/[seller_id] failed", {
-      seller_id: ctx?.params?.seller_id,
       error: e?.message,
     });
     return NextResponse.json({ error: e?.message || "Unexpected error" }, { status: 500 });
   }
 }
 
-export async function POST(_req: Request, ctx: { params: { seller_id: string } }) {
+export async function POST(_req: Request, ctx: { params: Promise<{ seller_id: string }> }) {
   try {
-    const sellerId = ctx?.params?.seller_id;
+    const { seller_id } = await ctx.params;
+    const sellerId = seller_id;
     if (!sellerId) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
 
     const supabase = createRouteClient();
@@ -145,7 +146,6 @@ export async function POST(_req: Request, ctx: { params: { seller_id: string } }
     return NextResponse.json({ liked, likes_count });
   } catch (e: any) {
     logger.error("POST /api/likes/[seller_id] failed", {
-      seller_id: ctx?.params?.seller_id,
       error: e?.message,
     });
     return NextResponse.json({ error: e?.message || "Unexpected error" }, { status: 500 });

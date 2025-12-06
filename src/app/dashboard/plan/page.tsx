@@ -12,7 +12,7 @@ import CancelSubscriptionButton from "./cancel-button";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type Props = { searchParams?: Record<string, string | string[] | undefined> };
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 function getParam(v: string | string[] | undefined) {
   return typeof v === "string" ? v : Array.isArray(v) ? v[0] : undefined;
@@ -28,12 +28,13 @@ function formatDate(d?: string | null) {
 }
 
 export default async function PlanPage({ searchParams }: Props) {
+  const sp = await searchParams;
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
   // Intervalo de suscripción (monthly/yearly). Default: monthly
-  const intervalRaw = getParam(searchParams?.interval);
+  const intervalRaw = getParam(sp?.interval);
   const interval = intervalRaw === "yearly" ? "yearly" : "monthly";
   const hasInterval = intervalRaw === "yearly" || intervalRaw === "monthly";
 
@@ -47,9 +48,9 @@ export default async function PlanPage({ searchParams }: Props) {
   let didApplyPending = false;
 
   // Mostrar mensaje de éxito cuando venimos de una cancelación correcta
-  const cancelParam = getParam(searchParams?.cancel);
+  const cancelParam = getParam(sp?.cancel);
   const showCancelSuccess = cancelParam === "1";
-  const mpParam = getParam(searchParams?.mp);
+  const mpParam = getParam(sp?.mp);
   const showMpWarning = showCancelSuccess && mpParam === "0";
 
   // Si hay un cambio programado vencido, aplicarlo de forma perezosa
@@ -90,7 +91,7 @@ export default async function PlanPage({ searchParams }: Props) {
   // Si aplicamos cambio programado en esta solicitud, notificar al backend para alternar preapprovals (reanudar nuevo y cancelar anterior)
   if (didApplyPending) {
     try {
-      const h2 = headers();
+      const h2 = await headers();
       await fetch("/api/billing/mp/post-apply", {
         method: "POST",
         headers: { cookie: h2.get("cookie") ?? "" },
@@ -182,7 +183,7 @@ export default async function PlanPage({ searchParams }: Props) {
   const roleLabel = isSeller ? "Vendedor" : "Comprador";
 
   // Cargar planes disponibles (para cambiar/contratar)
-  const h = headers();
+  const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   const baseUrl = host ? `${proto}://${host}` : "";

@@ -26,13 +26,14 @@ type Service = {
   user_id: string;
 };
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   try {
+    const { id } = await params;
     const supabase = createClient();
     const { data: service } = await supabase
       .from("services")
       .select("id,title,description")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
     if (!service) return {};
 
@@ -43,7 +44,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
       .order("id", { ascending: true });
     const image = (gallery || []).find((g: any) => g?.url)?.url as string | undefined;
 
-    const hdrs = headers();
+    const hdrs = await headers();
     const host = hdrs.get("x-forwarded-host") || hdrs.get("host");
     const proto = hdrs.get("x-forwarded-proto") || "http";
     const baseUrl = host ? `${proto}://${host}` : "";
@@ -70,8 +71,9 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   }
 }
 
-export default async function PublicServicePage({ params }: { params: { id: string } }) {
-  if (!params?.id) notFound();
+export default async function PublicServicePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  if (!id) notFound();
 
   const supabase = createClient();
   const { data: service, error } = await supabase
@@ -79,7 +81,7 @@ export default async function PublicServicePage({ params }: { params: { id: stri
     .select(
       "id,title,description,price,category,location,featured_until,created_at,user_id"
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("published", true)
     .single();
 
@@ -124,7 +126,7 @@ export default async function PublicServicePage({ params }: { params: { id: stri
   }
 
   // Cargar perfil del vendedor desde endpoint público (consistente con productos)
-  const hdrs = headers();
+  const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host");
   const proto = hdrs.get("x-forwarded-proto") || "http";
   const baseUrl = host ? `${proto}://${host}` : "";

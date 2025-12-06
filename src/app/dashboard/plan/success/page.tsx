@@ -14,10 +14,10 @@ function getParam(v: string | string[] | undefined) {
   return typeof v === "string" ? v : Array.isArray(v) ? v[0] : undefined;
 }
 
-function getBaseUrl() {
+async function getBaseUrl() {
   const env = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
   if (env) return env.replace(/\/$/, "");
-  const h = headers();
+  const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   return host ? `${proto}://${host}` : "";
@@ -78,19 +78,20 @@ function planLabelFromCode(code?: string | null, fallback?: string | null) {
   return map[c] ?? fallback ?? code ?? "Básico";
 }
 
-type Props = { searchParams?: Record<string, string | string[] | undefined> };
+type Props = { searchParams?: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function SuccessPage({ searchParams }: Props) {
-  let preapprovalId = getParam(searchParams?.preapproval_id) || getParam(searchParams?.id);
-  const created = getParam(searchParams?.created) === "1";
-  const scheduled = getParam(searchParams?.scheduled) === "1";
-  const already = getParam(searchParams?.already) === "1";
-  const free = getParam(searchParams?.free) === "1";
-  const effectiveAt = getParam(searchParams?.effective_at);
+  const sp = await searchParams;
+  let preapprovalId = getParam(sp?.preapproval_id) || getParam(sp?.id);
+  const created = getParam(sp?.created) === "1";
+  const scheduled = getParam(sp?.scheduled) === "1";
+  const already = getParam(sp?.already) === "1";
+  const free = getParam(sp?.free) === "1";
+  const effectiveAt = getParam(sp?.effective_at);
 
   // Fallback: si no llegó el preapproval_id en la URL, intentar recuperar el último creado para el usuario
   if (!preapprovalId) {
-    const baseUrl = getBaseUrl();
+    const baseUrl = await getBaseUrl();
     try {
       const res = await fetch(`${baseUrl}/api/billing/mp/last-preapproval`, { cache: "no-store" });
       if (res.ok) {

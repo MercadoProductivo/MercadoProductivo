@@ -30,14 +30,15 @@ function formatDate(date?: string | null) {
   }
 }
 
-export default async function VendorDetailPage({ params, searchParams }: { params: { id: string }, searchParams?: { from?: string; page?: string } }) {
-  const id = params.id;
-  const from = (searchParams?.from || "").toLowerCase();
+export default async function VendorDetailPage({ params, searchParams }: { params: Promise<{ id: string }>, searchParams?: Promise<{ from?: string; page?: string }> }) {
+  const { id } = await params;
+  const sp = await searchParams;
+  const from = (sp?.from || "").toLowerCase();
   const backHref = from === "exportadores"
-    ? `/exportadores${searchParams?.page ? `?page=${searchParams.page}` : ""}`
+    ? `/exportadores${sp?.page ? `?page=${sp.page}` : ""}`
     : "/vendedores";
   const backText = from === "exportadores" ? "Volver a Exportadores" : "Volver a Vendedores";
-  const hdrs = headers();
+  const hdrs = await headers();
   const host = hdrs.get("x-forwarded-host") || hdrs.get("host");
   const proto = hdrs.get("x-forwarded-proto") || "http";
   const baseUrl = host ? `${proto}://${host}` : "";
