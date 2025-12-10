@@ -52,27 +52,24 @@ export default function BannerSlider() {
     };
   }, []);
 
-  // Cargar imágenes del endpoint público que entrega URLs firmadas
+  // Definir las imágenes específicas para cada slide en orden
+  // 1: Transporte (Conectamos...)
+  // 2: Acopio (Productos...)
+  // 3: Servicios Financieros (Comunidad...)
+  const BANNER_FILES = [
+    "Transporte.webp",
+    "acopio.png",
+    "servicios financieros.png"
+  ];
+
+  // Generar URLs públicas directamente
   useEffect(() => {
-    const load = async () => {
-      try {
-        const params = new URLSearchParams({ limit: String(bannerSlides.length), folder: "imagessite" });
-        const res = await fetch(`/api/public/site/banners?${params.toString()}`, { cache: "no-store" });
-        if (!res.ok) {
-          console.error("[BannerSlider] Error HTTP al obtener banners:", res.status, res.statusText);
-          setSlideImages([null, null, null]);
-          return;
-        }
-        const json = await res.json();
-        const images: string[] = Array.isArray(json?.images) ? json.images : [];
-        const normalized = Array.from({ length: bannerSlides.length }, (_, i) => images[i] ?? null);
-        setSlideImages(normalized);
-      } catch (e) {
-        console.error("[BannerSlider] Error inesperado al cargar banners:", e);
-        setSlideImages([null, null, null]);
-      }
-    };
-    load();
+    const supabase = createClient();
+    const urls = BANNER_FILES.map(file => {
+      const { data } = supabase.storage.from("site").getPublicUrl(file);
+      return data.publicUrl;
+    });
+    setSlideImages(urls);
   }, []);
 
   // Preload de imágenes y marcar como cargadas
@@ -134,7 +131,7 @@ export default function BannerSlider() {
             )}
             {/* Background con overlay */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-black/30 z-10" />
-            
+
             {/* Contenido */}
             <div className="relative z-20 flex items-center justify-center h-full px-4 sm:px-6 lg:px-8">
               <div className="max-w-4xl mx-auto text-center text-white">
@@ -160,7 +157,7 @@ export default function BannerSlider() {
           </div>
         ))}
       </div>
-      
+
     </section>
   );
 }
