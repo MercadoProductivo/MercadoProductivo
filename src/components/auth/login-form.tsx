@@ -13,6 +13,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { toSpanishErrorMessage } from "@/lib/i18n/errors";
 import { LogIn } from "lucide-react";
+import { logSecurityEvent } from "@/lib/security/security-logger";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -52,7 +53,24 @@ export default function LoginForm() {
         email: values.email,
         password: values.password,
       });
-      if (error) throw error;
+
+      if (error) {
+        // Log failed login attempt
+        await logSecurityEvent({
+          type: 'LOGIN_FAILED',
+          user_email: values.email,
+          metadata: { error_message: error.message },
+          severity: 'MEDIUM'
+        });
+        throw error;
+      }
+
+      // Log successful login
+      await logSecurityEvent({
+        type: 'LOGIN_SUCCESS',
+        user_email: values.email,
+        severity: 'LOW'
+      });
 
       toast.success("¡Bienvenido! 👋");
       router.replace("/dashboard");

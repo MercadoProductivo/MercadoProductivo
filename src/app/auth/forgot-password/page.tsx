@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import AuthCard from "@/components/auth/auth-card";
 import { emailSchema } from "@/schemas/auth";
 import { toSpanishErrorMessage } from "@/lib/i18n/errors";
+import { logSecurityEvent } from "@/lib/security/security-logger";
 
 export default function Page() {
   const supabase = createClient();
@@ -32,6 +33,14 @@ export default function Page() {
       const redirectTo = typeof window !== "undefined" ? `${location.origin}/auth/update-password` : undefined;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
+
+      // Log password reset request
+      await logSecurityEvent({
+        type: 'PASSWORD_RESET_REQUESTED',
+        user_email: email,
+        severity: 'MEDIUM'
+      });
+
       toast.success("Te enviamos un correo para restablecer tu contraseña");
     } catch (e: any) {
       toast.error(toSpanishErrorMessage(e, "No se pudo enviar el correo"));

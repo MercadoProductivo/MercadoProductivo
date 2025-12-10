@@ -3,6 +3,7 @@ import { createRouteClient } from "@/lib/supabase/server";
 import { getNormalizedRoleFromUser } from "@/lib/auth/role";
 import { logger } from "@/lib/logger";
 import { checkRateLimit } from "@/lib/rate-limit-kv";
+import { logSecurityEvent, getClientIP } from "@/lib/security/security-logger";
 
 export async function POST(req: Request) {
   try {
@@ -27,6 +28,20 @@ export async function POST(req: Request) {
     });
 
     if (!rateLimitResult.success) {
+      // Log rate limit exceeded
+      await logSecurityEvent({
+        type: 'RATE_LIMIT_EXCEEDED',
+        user_id: user.id,
+        user_email: user.email,
+        ip_address: getClientIP(req),
+        metadata: {
+          endpoint: '/api/products/feature',
+          limit: rateLimitResult.limit,
+          resetAt: new Date(rateLimitResult.resetAt).toISOString()
+        },
+        severity: 'MEDIUM'
+      });
+
       return NextResponse.json(
         {
           error: "RATE_LIMIT_EXCEEDED",
