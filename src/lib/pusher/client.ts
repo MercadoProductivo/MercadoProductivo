@@ -22,7 +22,8 @@ async function ensureFeatureFlagLoaded(): Promise<void> {
     const res = await fetch("/api/feature-flags", { cache: "no-store" });
     if (res.ok) {
       const j = await res.json();
-      featureEnabled = Boolean(j?.chatV2Enabled);
+      // El API retorna { backend: { chatV2Enabled }, frontend: { chatV2Enabled }, ... }
+      featureEnabled = Boolean(j?.backend?.chatV2Enabled || j?.frontend?.chatV2Enabled || j?.chatV2Enabled);
     }
   } catch {
     // ignorar
@@ -41,24 +42,26 @@ export async function ensurePusherFeatureReady(): Promise<boolean> {
     if (!featureChecked) {
       await ensureFeatureFlagLoaded();
     }
-  } catch {}
+  } catch { }
   return featureEnabled;
 }
 
 export function getPusherClient(): Pusher | null {
   if (client) return client;
-  
+
   // Gateo por feature flag consultado en runtime (servidor decide)
   if (!featureChecked) {
     void ensureFeatureFlagLoaded();
     return null;
   }
-  
-  if (!featureEnabled) return null;
-  
+
+  if (!featureEnabled) {
+    return null;
+  }
+
   const key = process.env.NEXT_PUBLIC_PUSHER_KEY as string | undefined;
   const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER as string | undefined;
-  
+
   if (!key || !cluster) {
     console.error('Pusher key or cluster not configured');
     return null;
@@ -86,7 +89,7 @@ export function getPusherClient(): Pusher | null {
     client.connection.bind('state_change', (states: { previous: PusherConnectionState; current: PusherConnectionState }) => {
       connectionState = states.current;
       stateHandlers.forEach(handler => handler(states.current));
-      
+
       if (states.current === 'failed' || states.current === 'unavailable') {
         console.warn('Pusher connection failed or unavailable');
       }
@@ -115,7 +118,7 @@ export function subscribePrivate(channelName: string, options: {
 
   try {
     const ch = p.subscribe(channelName);
-    
+
     if (options.onSubscriptionSucceeded || options.onSubscriptionError) {
       ch.bind('pusher:subscription_succeeded', () => {
         if (!channelRegistry.has(channelName)) {
@@ -124,7 +127,7 @@ export function subscribePrivate(channelName: string, options: {
         }
         options.onSubscriptionSucceeded?.();
       });
-      
+
       ch.bind('pusher:subscription_error', (status: number) => {
         options.onSubscriptionError?.(status);
       });
@@ -151,7 +154,7 @@ export function onConnectionStateChange(handler: ConnectionStateHandler): () => 
   stateHandlers.add(handler);
   // Llamar inmediatamente con el estado actual
   handler(connectionState);
-  
+
   return () => {
     stateHandlers.delete(handler);
   };
@@ -159,7 +162,7 @@ export function onConnectionStateChange(handler: ConnectionStateHandler): () => 
 
 export function onError(handler: ErrorHandler): () => void {
   errorHandlers.add(handler);
-  
+
   return () => {
     errorHandlers.delete(handler);
   };
@@ -170,7 +173,7 @@ export function disconnect(): void {
     client.disconnect();
     client = null;
     connectionState = 'disconnected';
-    try { channelRegistry.clear(); channelOrder.length = 0; } catch {}
+    try { channelRegistry.clear(); channelOrder.length = 0; } catch { }
   }
 }
 
@@ -200,7 +203,7 @@ export function safeUnsubscribe(channelName: string): void {
       channelRegistry.delete(channelName);
       const idx = channelOrder.indexOf(channelName);
       if (idx >= 0) channelOrder.splice(idx, 1);
-    } catch {}
+    } catch { }
   }
 }
 

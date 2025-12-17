@@ -6,7 +6,7 @@ import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   // Guardia adicional del lado del servidor (además del middleware)
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -27,3 +27,4 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     </div>
   );
 }
+

@@ -13,7 +13,7 @@ function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 10000
 }
 
 export async function POST() {
-  const supabase = createRouteClient();
+  const supabase = await createRouteClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
@@ -126,3 +126,4 @@ export async function POST() {
 
   return NextResponse.json({ ok: true, from: oldPreId, to: newPreId, resumed, renews_at: nextRenewsAt });
 }
+

@@ -7,7 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { 
+import {
   Menu, LogOut,
   MessageSquare
 } from "lucide-react";
@@ -42,7 +42,7 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
   // Cargar usuario y escuchar cambios de auth
   useEffect(() => {
     let mounted = true;
-    
+
     // Cargar usuario inicial
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted) return;
@@ -50,18 +50,18 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
     }).finally(() => {
       if (mounted) setUserLoading(false);
     });
-    
+
     // Suscribirse a cambios de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setUserLoading(false);
     });
-    
+
     return () => {
       mounted = false;
       try {
         subscription?.unsubscribe();
-      } catch {}
+      } catch { }
     };
   }, [supabase]);
 
@@ -71,7 +71,7 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
       setProfileName(null);
       return;
     }
-    
+
     let isActive = true;
 
     async function loadProfileName() {
@@ -79,14 +79,14 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
         .from("profiles")
         .select("full_name, first_name, last_name")
         .eq("id", user.id)
-        .single();
-        
+        .maybeSingle();
+
       if (!isActive) return;
-      
+
       const name = (data?.full_name || `${data?.first_name ?? ""} ${data?.last_name ?? ""}`)
         .toString()
         .trim();
-        
+
       setProfileName(name || null);
     }
 
@@ -98,9 +98,9 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
   }, [supabase, user?.id]);
 
   // Mostrar texto de bienvenida con nombre del usuario
-  const displayName = profileName || 
-    (user?.user_metadata?.full_name as string | undefined) || 
-    (user?.user_metadata?.name as string | undefined) || 
+  const displayName = profileName ||
+    (user?.user_metadata?.full_name as string | undefined) ||
+    (user?.user_metadata?.name as string | undefined) ||
     "Usuario";
 
   // Rol normalizado: preferir valor inicial pasado desde el servidor para evitar flicker
@@ -143,8 +143,8 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
       )}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button 
-            size="icon" 
+          <Button
+            size="icon"
             className="h-12 w-12 rounded-full bg-orange-500 text-white shadow-lg hover:bg-orange-600"
           >
             <Menu className="h-6 w-6" />
@@ -162,9 +162,9 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
               {user ? (
                 <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage 
-                      src={(user.user_metadata as any)?.avatar_url || (user.user_metadata as any)?.picture} 
-                      alt={displayName} 
+                    <AvatarImage
+                      src={(user.user_metadata as any)?.avatar_url || (user.user_metadata as any)?.picture}
+                      alt={displayName}
                     />
                     <AvatarFallback>{displayName?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                   </Avatar>
@@ -199,8 +199,8 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
                     onClick={() => setOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                      isActive(href) 
-                        ? "bg-muted text-foreground" 
+                      isActive(href)
+                        ? "bg-muted text-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
@@ -227,8 +227,8 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
                         onClick={() => setOpen(false)}
                         className={cn(
                           "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                          isActive(href) 
-                            ? "bg-muted text-foreground" 
+                          isActive(href)
+                            ? "bg-muted text-foreground"
                             : "text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                       >
@@ -257,8 +257,8 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
             <Separator />
             <div className="px-2 space-y-2">
               {user ? (
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full justify-start gap-2 text-red-500"
                   onClick={handleSignOut}
                 >

@@ -6,7 +6,7 @@ try {
   if (SUPABASE_URL) {
     supabaseHostname = new URL(SUPABASE_URL).hostname;
   }
-} catch {}
+} catch { }
 
 const nextConfig = {
   reactStrictMode: true,
@@ -86,14 +86,14 @@ const nextConfig = {
         source: '/:path*',
         headers: [
           {
-            key: 'Content-Security-Policy-Report-Only',
+            key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.pusher.com https://cdn.vercel-insights.com https://challenges.cloudflare.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.pusher.com https://cdn.vercel-insights.com https://va.vercel-scripts.com https://challenges.cloudflare.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://plus.unsplash.com https://via.placeholder.com",
-              "connect-src 'self' https://*.supabase.co wss://ws-*.pusher.com https://api.mercadopago.com https://vitals.vercel-insights.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co wss://*.pusher.com https://*.pusher.com https://api.mercadopago.com https://vitals.vercel-insights.com https://apis.datos.gob.ar https://va.vercel-scripts.com",
               "frame-src 'self' https://www.mercadopago.com https://challenges.cloudflare.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",

@@ -5,11 +5,15 @@ import {
 import { cookies } from "next/headers";
 
 // Para Server Components
-export function createClient() {
-  return createServerComponentClient({ cookies });
+export async function createClient() {
+  const cookieStore = await cookies();
+  // @ts-ignore
+  return createServerComponentClient({ cookies: () => cookieStore });
 }
 
 // Para Route Handlers (app/**/route.ts)
-export function createRouteClient() {
-  return createRouteHandlerClient({ cookies });
+export async function createRouteClient() {
+  const cookieStore = await cookies();
+  // @ts-ignore
+  return createRouteHandlerClient({ cookies: () => cookieStore });
 }

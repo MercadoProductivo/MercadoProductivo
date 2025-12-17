@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     await supabase.auth.exchangeCodeForSession(code);
   }
 
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
 // Sincroniza la cookie de sesión desde el cliente (onAuthStateChange)
 export async function POST(request: Request) {
-  const supabase = createRouteClient();
+  const supabase = await createRouteClient();
   try {
     const { event, session } = await request.json();
 
@@ -43,3 +43,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 }
+

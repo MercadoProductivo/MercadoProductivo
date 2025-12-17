@@ -124,7 +124,7 @@ export default async function SuccessPage({ searchParams }: Props) {
   else if (already) description = "Ya estabas suscripto a este plan.";
 
   // Cargar perfil para mostrar plan activo/pendiente
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   let activeCode: string | null = null;
   let pendingCode: string | null = null;
@@ -278,4 +278,5 @@ export default async function SuccessPage({ searchParams }: Props) {
     </div>
   );
 }
+
 

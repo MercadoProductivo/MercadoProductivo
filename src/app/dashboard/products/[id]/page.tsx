@@ -16,7 +16,7 @@ export default async function ProductDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -84,55 +84,55 @@ export default async function ProductDetailPage({
 
   return (
     <div className="mx-auto max-w-4xl p-4 space-y-4 sm:p-6 sm:space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <Button variant="outline" asChild size="sm">
-              <Link href="/dashboard/products">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Volver
-              </Link>
-            </Button>
-            <Button asChild size="sm" className="bg-orange-500 text-white hover:bg-orange-600">
-              <Link href={`/dashboard/products/${product.id}/edit`}>
-                <Pencil className="mr-2 h-4 w-4" /> Editar
-              </Link>
-            </Button>
-          </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <Button variant="outline" asChild size="sm">
+          <Link href="/dashboard/products">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver
+          </Link>
+        </Button>
+        <Button asChild size="sm" className="bg-orange-500 text-white hover:bg-orange-600">
+          <Link href={`/dashboard/products/${product.id}/edit`}>
+            <Pencil className="mr-2 h-4 w-4" /> Editar
+          </Link>
+        </Button>
+      </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
-            <div className="space-y-3">
-              <ProductGallery images={imageUrls} title={product.title} />
-            </div>
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+        <div className="space-y-3">
+          <ProductGallery images={imageUrls} title={product.title} />
+        </div>
 
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-semibold sm:text-2xl">{product.title}</h1>
-                {isFeatured && (
-                  <Badge className="bg-orange-500 text-white">
-                    <Star className="mr-1 h-3 w-3" /> Destacado
-                  </Badge>
-                )}
-              </div>
-              <div className="text-base sm:text-lg">
-                <span className="font-medium">{priceFmt}</span>
-                <span className="text-muted-foreground">{" · "}{quantity}</span>
-              </div>
-              <div className="text-sm text-muted-foreground inline-flex items-center gap-1">
-                <MapPin className="h-4 w-4" /> {product.location}
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground sm:text-sm">Categoría</div>
-                <div className="text-sm">{product.category}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground sm:text-sm">Descripción</div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {product.description}
-                </p>
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Publicado: {new Date(product.created_at).toLocaleDateString("es-AR")}
-              </div>
-            </div>
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl font-semibold sm:text-2xl">{product.title}</h1>
+            {isFeatured && (
+              <Badge className="bg-orange-500 text-white">
+                <Star className="mr-1 h-3 w-3" /> Destacado
+              </Badge>
+            )}
           </div>
+          <div className="text-base sm:text-lg">
+            <span className="font-medium">{priceFmt}</span>
+            <span className="text-muted-foreground">{" · "}{quantity}</span>
+          </div>
+          <div className="text-sm text-muted-foreground inline-flex items-center gap-1">
+            <MapPin className="h-4 w-4" /> {product.location}
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground sm:text-sm">Categoría</div>
+            <div className="text-sm">{product.category}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground sm:text-sm">Descripción</div>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              {product.description}
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Publicado: {new Date(product.created_at).toLocaleDateString("es-AR")}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

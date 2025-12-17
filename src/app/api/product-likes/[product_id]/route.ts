@@ -13,7 +13,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ product_id: st
     const productId = product_id;
     if (!productId) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
 
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
 
     const { data: countRows } = await supabase
       .from("v_product_likes_count")
@@ -49,7 +49,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ product_id: s
     const productId = product_id;
     if (!productId) return NextResponse.json({ error: "MISSING_ID" }, { status: 400 });
 
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user;
     if (!user) {

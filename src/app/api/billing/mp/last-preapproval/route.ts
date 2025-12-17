@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET() {
-  const supabase = createRouteClient();
+  const supabase = await createRouteClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,3 +25,4 @@ export async function GET() {
   const preapprovalId = (event as any)?.payload?.preapproval_id || null;
   return NextResponse.json({ ok: true, preapproval_id: preapprovalId });
 }
+

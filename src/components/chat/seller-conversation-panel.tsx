@@ -59,9 +59,9 @@ export default function SellerConversationPanel({
   // Estado de conexión (indicador visual)
   useEffect(() => {
     const off = onConnectionStateChange((state) => {
-      try { setConnState(state as any); } catch {}
+      try { setConnState(state as any); } catch { }
     });
-    return () => { try { off?.(); } catch {} };
+    return () => { try { off?.(); } catch { } };
   }, []);
 
   // Helper: restar ms a un ISO para evitar inclusiones
@@ -129,7 +129,7 @@ export default function SellerConversationPanel({
             const newHeight = el2.scrollHeight;
             el2.scrollTop = (newHeight - prevHeight) + prevTop;
           }
-        } catch {}
+        } catch { }
       });
     } catch (e: any) {
       toast.error(e?.message || "No se pudo cargar más mensajes");
@@ -171,7 +171,7 @@ export default function SellerConversationPanel({
           setSelfAvatarUrl((avatar_url || "").toString().trim() || null);
           return;
         }
-      } catch {}
+      } catch { }
     }
 
     // Si no hay caché o es inválida, cargar desde la API
@@ -183,7 +183,7 @@ export default function SellerConversationPanel({
             .from("profiles")
             .select("full_name,avatar_url")
             .eq("id", selfId)
-            .single()
+            .maybeSingle()
         ]);
 
         if (!active) return;
@@ -244,7 +244,7 @@ export default function SellerConversationPanel({
       setTimeline((prev) => [...prev]);
       try {
         onConversationRead?.(effectiveConversationId);
-      } catch {}
+      } catch { }
       lastReadIncomingKeyRef.current = latestIncoming;
       lastReadPostAtRef.current = Date.now();
     } catch (error) {
@@ -274,7 +274,7 @@ export default function SellerConversationPanel({
           markAsRead();
         }, 120);
       }
-    } catch {}
+    } catch { }
   }, [markAsRead]);
 
   useEffect(() => {
@@ -310,10 +310,10 @@ export default function SellerConversationPanel({
             // Mostrar inmediatamente lo que haya en caché
             processMessages(data);
             // Y lanzar una carga en segundo plano para evitar quedarse con datos viejos/vacíos
-            setTimeout(() => { try { fetchMessages(); } catch {} }, 0);
+            setTimeout(() => { try { fetchMessages(); } catch { } }, 0);
             return;
           }
-        } catch {}
+        } catch { }
       }
 
       // Cargar desde la API
@@ -330,9 +330,9 @@ export default function SellerConversationPanel({
         // Obtener los más recientes primero para que al entrar a la conversación se vea lo último
         url.searchParams.set("order", "desc");
 
-        const msgRes = await fetch(url.toString(), { 
+        const msgRes = await fetch(url.toString(), {
           cache: "no-store",
-          signal: controller.signal 
+          signal: controller.signal
         });
 
         clearTimeout(timeoutId);
@@ -408,10 +408,10 @@ export default function SellerConversationPanel({
                   localStorage.removeItem(key);
                 }
               }
-            } catch {}
+            } catch { }
           }
         });
-      } catch {}
+      } catch { }
     };
   }, [effectiveConversationId, selfId]);
 
@@ -430,7 +430,7 @@ export default function SellerConversationPanel({
   useEffect(() => {
     try {
       timeline.forEach((it) => seenRef.current.add(it.id));
-    } catch {}
+    } catch { }
   }, [timeline]);
 
   useEffect(() => {
@@ -443,7 +443,7 @@ export default function SellerConversationPanel({
     let retries = 0;
     let handlersBound = false;
 
-    let cleanup: () => void = () => {};
+    let cleanup: () => void = () => { };
 
     const bindHandlers = () => {
       if (!ch || handlersBound) return;
@@ -481,15 +481,15 @@ export default function SellerConversationPanel({
             const next = replaced
               ? mapped
               : mapped.concat({
-                  id: key,
-                  type: "outgoing" as const,
-                  message_id: effectiveConversationId,
-                  body: msg?.body,
-                  created_at: msg?.created_at || new Date().toISOString(),
-                  sender_name: selfNameRef.current || undefined,
-                  sender_email: selfEmailRef.current || undefined,
-                  avatar_url: selfAvatarUrlRef.current || undefined,
-                });
+                id: key,
+                type: "outgoing" as const,
+                message_id: effectiveConversationId,
+                body: msg?.body,
+                created_at: msg?.created_at || new Date().toISOString(),
+                sender_name: selfNameRef.current || undefined,
+                sender_email: selfEmailRef.current || undefined,
+                avatar_url: selfAvatarUrlRef.current || undefined,
+              });
             return next.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
           }
 
@@ -511,7 +511,7 @@ export default function SellerConversationPanel({
           if (readDebounceRef.current) clearTimeout(readDebounceRef.current);
           readDebounceRef.current = setTimeout(() => {
             // No await para no bloquear el handler de realtime
-            try { markAsReadRef.current?.(); } catch {}
+            try { markAsReadRef.current?.(); } catch { }
           }, 120);
         }
       };
@@ -523,7 +523,7 @@ export default function SellerConversationPanel({
             const at = String(payload?.last_read_at || new Date().toISOString());
             setLastReadAt(at);
           }
-        } catch {}
+        } catch { }
       };
 
       const onTyping = (payload: any) => {
@@ -536,7 +536,7 @@ export default function SellerConversationPanel({
               typingTimerRef.current = setTimeout(() => setIsTyping(false), 3500);
             }
           }
-        } catch {}
+        } catch { }
       };
 
       ch.bind("chat:message:new", onChatMessageNew);
@@ -551,7 +551,7 @@ export default function SellerConversationPanel({
           ch.unbind("chat:conversation:read", onConvRead);
           ch.unbind("chat:typing", onTyping);
           getPusherClient()?.unsubscribe(channelName);
-        } catch {}
+        } catch { }
         handlersBound = false;
       };
     };
@@ -559,40 +559,47 @@ export default function SellerConversationPanel({
     const tryInit = () => {
       if (disposed) return;
       const client = getPusherClient();
+
       if (!client) {
         retries += 1;
         retryTimer = setTimeout(tryInit, Math.min(30000, 500 * Math.pow(2, retries)));
         return;
       }
+
       ensurePusherFeatureReady().then((enabled) => {
         if (!enabled) {
           retries += 1;
           retryTimer = setTimeout(tryInit, Math.min(30000, 500 * Math.pow(2, retries)));
           return;
         }
+
         ch = subscribePrivate(channelName, {
-          onSubscriptionSucceeded: () => { retries = 0; bindHandlers(); },
-          onSubscriptionError: (status) => {
-            // 403: auth/membership, 410: feature deshabilitada en servidor
+          onSubscriptionSucceeded: () => {
+            retries = 0;
+            bindHandlers();
+          },
+          onSubscriptionError: (status: any) => {
+            console.warn("[SellerPanel] Subscription Error:", status, channelName);
             retries += 1;
             retryTimer = setTimeout(tryInit, Math.min(30000, 500 * Math.pow(2, retries)));
           },
         });
         if (!ch) {
+          console.warn("[SellerPanel] Subscribe returned null for", channelName);
           retries += 1;
           retryTimer = setTimeout(tryInit, Math.min(30000, 500 * Math.pow(2, retries)));
           return;
         }
-        // No llamar a bindHandlers aquí; se hace en onSubscriptionSucceeded para evitar binds duplicados
       });
     };
+
 
     tryInit();
 
     return () => {
       disposed = true;
-      try { if (retryTimer) clearTimeout(retryTimer); } catch {}
-      try { cleanup(); } catch {}
+      try { if (retryTimer) clearTimeout(retryTimer); } catch { }
+      try { cleanup(); } catch { }
     };
   }, [effectiveConversationId, selfId]);
 
@@ -622,7 +629,7 @@ export default function SellerConversationPanel({
       toast.success("Conversación marcada como leída");
       try {
         onConversationRead?.(effectiveConversationId);
-      } catch {}
+      } catch { }
     } catch (e: any) {
       toast.error(e?.message || "No se pudo marcar como leída");
     }
@@ -662,8 +669,8 @@ export default function SellerConversationPanel({
               <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                 <span className={cn("h-2 w-2 rounded-full",
                   connState === "connected" ? "bg-emerald-500" :
-                  (connState === "connecting" || connState === "unavailable") ? "bg-amber-500" :
-                  "bg-red-500"
+                    (connState === "connecting" || connState === "unavailable") ? "bg-amber-500" :
+                      "bg-red-500"
                 )} />
                 <span>
                   {connState === "connected" ? "Conectado" : (connState === "connecting" || connState === "unavailable") ? "Reconectando..." : "Desconectado"}
@@ -676,7 +683,7 @@ export default function SellerConversationPanel({
           </div>
           <div className="flex items-center gap-1">
             {onClose ? (
-              <Button variant="ghost" size="icon" aria-label="Cerrar" title="Cerrar" onClick={() => { try { onClose(); } catch {} }}>
+              <Button variant="ghost" size="icon" aria-label="Cerrar" title="Cerrar" onClick={() => { try { onClose(); } catch { } }}>
                 <X className="h-5 w-5" />
               </Button>
             ) : null}

@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { buildSafeStoragePath } from "@/lib/images";
 import { Switch } from "@/components/ui/switch";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 function isValidDniCuit(raw: string): boolean {
   const digits = (raw || "").replace(/\D/g, "");
@@ -62,8 +63,8 @@ const profileSchema = z.object({
     .or(z.literal(""))
     .refine((v) => {
       const d = String(v || "").replace(/\D/g, "");
-      return d.length === 0 || (d.length >= 8 && d.length <= 15);
-    }, { message: "Ingrese un teléfono válido (8 a 15 dígitos)." }),
+      return d.length === 0 || (d.length >= 10 && d.length <= 15);
+    }, { message: "Ingrese código de área y número (mínimo 10 dígitos)." }),
   // Campo Deluxe
   exportador: z.boolean().optional().default(false),
 });
@@ -87,7 +88,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
   const exportadorColumnExistsRef = useRef<boolean>(true);
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    mode: "onChange",
+    mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
       first_name: "",
@@ -185,7 +186,8 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
       const res = await fetch(url);
       if (!res.ok) throw new Error("Error al cargar localidades");
       const data = await res.json();
-      const items: string[] = (data?.localidades || []).map((l: any) => l?.nombre).filter(Boolean).sort();
+      const rawItems = (data?.localidades || []).map((l: any) => String(l?.nombre)).filter(Boolean);
+      const items: string[] = Array.from(new Set(rawItems as string[])).sort();
       const currentCity = form.getValues("city");
       if (preserveCity && currentCity && !items.includes(currentCity)) {
         setLocalities([currentCity, ...items]);
@@ -310,12 +312,12 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
       if (dbErr) throw dbErr;
       try {
         await supabase.auth.updateUser({ data: { avatar_url: publicUrl } });
-      } catch {}
+      } catch { }
       setAvatarUrl(publicUrl);
       toast.success("Avatar actualizado");
       try {
         window.dispatchEvent(new CustomEvent("profile:updated", { detail: { avatar_url: publicUrl } }));
-      } catch {}
+      } catch { }
     } catch (e: any) {
       console.error(e);
       const msg = e?.message ?? String(e);
@@ -452,7 +454,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             : false,
         };
         initialValuesRef.current = snapshot;
-      } catch {}
+      } catch { }
       // Actualizar metadata de auth para reflejar el nombre en listeners de auth
       try {
         await supabase.auth.updateUser({
@@ -462,14 +464,14 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             last_name: values.last_name,
           },
         });
-      } catch {}
+      } catch { }
       toast.success("Perfil actualizado");
       try {
         // Notificar en tiempo real al header sin depender de Realtime
         window.dispatchEvent(
           new CustomEvent("profile:updated", { detail: payload as any })
         );
-      } catch {}
+      } catch { }
       onSaved?.();
     } catch (e: any) {
       console.error("Perfil: error al guardar", e);
@@ -619,7 +621,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             className={form.getFieldState("first_name", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
           />
           {form.getFieldState("first_name", form.formState).error && (
-            <p id="first_name-error" className="text-xs text-red-600">
+            <p role="alert" id="first_name-error" className="text-xs text-red-500">
               {form.getFieldState("first_name", form.formState).error?.message}
             </p>
           )}
@@ -640,7 +642,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             className={form.getFieldState("last_name", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
           />
           {form.getFieldState("last_name", form.formState).error && (
-            <p id="last_name-error" className="text-xs text-red-600">
+            <p role="alert" id="last_name-error" className="text-xs text-red-500">
               {form.getFieldState("last_name", form.formState).error?.message}
             </p>
           )}
@@ -684,7 +686,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             className={form.getFieldState("dni_cuit", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
           />
           {form.getFieldState("dni_cuit", form.formState).error && (
-            <p id="dni_cuit-error" className="text-xs text-red-600">
+            <p role="alert" id="dni_cuit-error" className="text-xs text-red-500">
               {form.getFieldState("dni_cuit", form.formState).error?.message}
             </p>
           )}
@@ -721,7 +723,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             )}
           />
           {form.getFieldState("province", form.formState).error && (
-            <p id="province-error" className="text-xs text-red-600">
+            <p role="alert" id="province-error" className="text-xs text-red-500">
               {form.getFieldState("province", form.formState).error?.message}
             </p>
           )}
@@ -764,7 +766,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             )}
           />
           {form.getFieldState("city", form.formState).error && (
-            <p id="city-error" className="text-xs text-red-600">
+            <p role="alert" id="city-error" className="text-xs text-red-500">
               {form.getFieldState("city", form.formState).error?.message}
             </p>
           )}
@@ -786,7 +788,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             className={form.getFieldState("address", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
           />
           {form.getFieldState("address", form.formState).error && (
-            <p id="address-error" className="text-xs text-red-600">
+            <p role="alert" id="address-error" className="text-xs text-red-500">
               {form.getFieldState("address", form.formState).error?.message}
             </p>
           )}
@@ -826,13 +828,13 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
             id="phone"
             value={form.watch("phone") || ""}
             onChange={handlePhoneChange}
-            placeholder="Ej: +549112345678 (solo números y +)"
+            placeholder="Ej: 11 1234 5678"
             aria-describedby="phone-error"
             disabled={allDisabled}
             className={form.getFieldState("phone", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
           />
           {form.getFieldState("phone", form.formState).error && (
-            <p id="phone-error" className="text-xs text-red-600">
+            <p role="alert" id="phone-error" className="text-xs text-red-500">
               {form.getFieldState("phone", form.formState).error?.message}
             </p>
           )}
@@ -870,9 +872,9 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
         </div>
       )}
       {!hideInternalSubmit && (
-        <Button type="submit" disabled={saving} className="w-full">
-          {saving ? "Guardando..." : "Guardar cambios"}
-        </Button>
+        <SubmitButton isLoading={saving} className="w-full" loadingText="Guardando...">
+          Guardar cambios
+        </SubmitButton>
       )}
     </form>
   );

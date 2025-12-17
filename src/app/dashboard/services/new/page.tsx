@@ -11,7 +11,7 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 export default async function NewServicePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -121,3 +121,4 @@ export default async function NewServicePage() {
     </div>
   );
 }
+

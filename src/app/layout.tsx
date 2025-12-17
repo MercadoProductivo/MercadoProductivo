@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   },
   description: "Plataforma que conecta vendedores con compradores",
   manifest: "/manifest.webmanifest",
-  themeColor: "#f06d04",
   icons: {
     icon: [
       { url: "/mp-logo.svg?v=20251026", type: "image/svg+xml" },
@@ -55,6 +54,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  themeColor: "#f06d04",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -68,7 +68,7 @@ export const revalidate = 0;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Calcular rol del usuario en el servidor para evitar parpadeos en móvil
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const initialIsSeller = !!(user && normalizeRoleFromMetadata(user.user_metadata || {}) === "seller");
   return (
@@ -128,3 +128,4 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     </html>
   );
 }
+

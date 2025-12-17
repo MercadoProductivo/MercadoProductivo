@@ -30,7 +30,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
   const { id } = await params;
   if (!id || typeof id !== "string") notFound();
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) redirect("/auth/login");
 

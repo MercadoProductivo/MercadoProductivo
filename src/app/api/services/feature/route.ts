@@ -6,7 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit-kv";
 
 export async function POST(req: Request) {
   try {
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -129,3 +129,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "Error inesperado" }, { status: 500 });
   }
 }
+

@@ -93,12 +93,12 @@ export default function BuyerConversationWindow({
           .from("profiles")
           .select("full_name,avatar_url")
           .eq("id", uid)
-          .single();
+          .maybeSingle();
         setSelfName((data?.full_name || "").toString().trim() || null);
         // El email proviene de auth.users, no de profiles
         setSelfEmail((auth?.user?.email || "").toString().trim() || null);
         setSelfAvatarUrl((data?.avatar_url || "").toString().trim() || null);
-      } catch {}
+      } catch { }
     })();
   }, [supabase]);
 
@@ -146,7 +146,7 @@ export default function BuyerConversationWindow({
           }));
         setTimeline(tl);
         // Sembrar dedupe
-        try { tl.forEach((it) => seenRef.current.add(it.id)); } catch {}
+        try { tl.forEach((it) => seenRef.current.add(it.id)); } catch { }
         // Marcar que la carga inicial terminó
         initialLoadedRef.current = true;
 
@@ -159,7 +159,7 @@ export default function BuyerConversationWindow({
             await markConversationRead(conversationId);
             readMarkedRef.current = true;
           }
-        } catch {}
+        } catch { }
       } catch (e: any) {
         toast.error(e?.message || "No se pudo cargar el historial");
       } finally {
@@ -185,7 +185,7 @@ export default function BuyerConversationWindow({
         }
       }
       lastSeenAtRef.current = maxAt;
-    } catch {}
+    } catch { }
   }, [timeline]);
 
   const onChatMessageNew = useCallback(async (raw: any) => {
@@ -220,7 +220,7 @@ export default function BuyerConversationWindow({
         await markConversationRead(effectiveThreadId);
         readMarkedRef.current = true;
       }
-    } catch {}
+    } catch { }
   }, [sellerId, effectiveThreadId, sellerName, selfName, selfEmail, sellerAvatarUrl, selfAvatarUrl, compareItems]);
 
   useEffect(() => {
@@ -242,7 +242,7 @@ export default function BuyerConversationWindow({
             const at = String(payload?.last_read_at || new Date().toISOString());
             setLastReadAt(at);
           }
-        } catch {}
+        } catch { }
       });
       ch.bind("chat:typing", (payload: any) => {
         try {
@@ -254,7 +254,7 @@ export default function BuyerConversationWindow({
               typingTimerRef.current = setTimeout(() => setIsTyping(false), 3500);
             }
           }
-        } catch {}
+        } catch { }
       });
       handlersBound = true;
     };
@@ -264,7 +264,7 @@ export default function BuyerConversationWindow({
         ch?.unbind?.("chat:message:new", onChatMessageNew);
         ch?.unbind?.("chat:conversation:read");
         ch?.unbind?.("chat:typing");
-      } catch {}
+      } catch { }
       handlersBound = false;
     };
 
@@ -280,7 +280,7 @@ export default function BuyerConversationWindow({
       const backoff = Math.min(cap, Math.round(base * Math.pow(2, attempt)));
       const jitter = Math.floor(Math.random() * Math.min(1000, Math.max(250, Math.floor(backoff * 0.3))))
       const delay = backoff + jitter;
-      try { if (retryTimer) clearTimeout(retryTimer); } catch {}
+      try { if (retryTimer) clearTimeout(retryTimer); } catch { }
       retryTimer = setTimeout(trySubscribe, delay);
     };
 
@@ -299,9 +299,9 @@ export default function BuyerConversationWindow({
 
     return () => {
       disposed = true;
-      try { if (retryTimer) clearTimeout(retryTimer); } catch {}
-      try { unbindHandlers(); } catch {}
-      try { safeUnsubscribe(channel); } catch {}
+      try { if (retryTimer) clearTimeout(retryTimer); } catch { }
+      try { unbindHandlers(); } catch { }
+      try { safeUnsubscribe(channel); } catch { }
     };
   }, [open, sellerId, effectiveThreadId, onChatMessageNew]);
 
@@ -313,7 +313,7 @@ export default function BuyerConversationWindow({
         try {
           await markConversationRead(effectiveThreadId);
           readMarkedRef.current = true;
-        } catch {}
+        } catch { }
       })();
     }
   }, [open, effectiveThreadId, timeline]);
@@ -373,10 +373,10 @@ export default function BuyerConversationWindow({
               avatar_url: m.avatar_url,
             }));
             setTimeline(items.sort(compareItems));
-            try { items.forEach((it) => seenRef.current.add(it.id)); } catch {}
+            try { items.forEach((it) => seenRef.current.add(it.id)); } catch { }
             return;
           }
-        } catch {}
+        } catch { }
       }
       const items: ChatItem[] = rows.map((m: any) => {
         const isIncoming = String(m.sender_id) === String(sellerId);
@@ -401,14 +401,14 @@ export default function BuyerConversationWindow({
         next.sort(compareItems);
         return next;
       });
-      try { items.forEach((it) => seenRef.current.add(it.id)); } catch {}
+      try { items.forEach((it) => seenRef.current.add(it.id)); } catch { }
       // Marcar leído si el fetch incremental trajo mensajes entrantes
       try {
         if (hasIncoming && effectiveThreadId) {
           await markConversationRead(effectiveThreadId);
           readMarkedRef.current = true;
         }
-      } catch {}
+      } catch { }
     } catch (e) {
       console.warn("Incremental fetch failed:", e);
     } finally {
@@ -427,7 +427,7 @@ export default function BuyerConversationWindow({
         setTimeout(() => { void fetchIncremental(); }, 120);
       }
     });
-    return () => { try { off?.(); } catch {} };
+    return () => { try { off?.(); } catch { } };
   }, [open, effectiveThreadId, fetchIncremental]);
 
   return (
@@ -440,7 +440,7 @@ export default function BuyerConversationWindow({
           <div
             className="sm:hidden mx-auto mb-2 mt-1 h-1.5 w-12 rounded-full bg-muted"
             onTouchStart={(e) => {
-              try { (e.currentTarget as any)._startY = e.touches?.[0]?.clientY ?? 0; (e.currentTarget as any)._deltaY = 0; } catch {}
+              try { (e.currentTarget as any)._startY = e.touches?.[0]?.clientY ?? 0; (e.currentTarget as any)._deltaY = 0; } catch { }
             }}
             onTouchMove={(e) => {
               try {
@@ -448,7 +448,7 @@ export default function BuyerConversationWindow({
                 if (startY == null) return;
                 const y = e.touches?.[0]?.clientY ?? startY;
                 (e.currentTarget as any)._deltaY = y - startY;
-              } catch {}
+              } catch { }
             }}
             onTouchEnd={(e) => {
               try {
@@ -456,7 +456,7 @@ export default function BuyerConversationWindow({
                 if (dy > 60) onOpenChange(false);
                 (e.currentTarget as any)._startY = null;
                 (e.currentTarget as any)._deltaY = 0;
-              } catch {}
+              } catch { }
             }}
           />
           <div className="flex items-center gap-3">
@@ -473,7 +473,7 @@ export default function BuyerConversationWindow({
             </div>
           </div>
         </DialogHeader>
-        <div className={cn("flex min-h-0 flex-1 flex-col")}> 
+        <div className={cn("flex min-h-0 flex-1 flex-col")}>
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-3">
             {loading ? (
               <div className="p-3 text-sm text-muted-foreground">Cargando...</div>

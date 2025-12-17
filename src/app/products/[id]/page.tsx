@@ -33,7 +33,7 @@ type Product = {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   try {
     const { id } = await params;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: product } = await supabase
       .from("products")
       .select("id,title,description")
@@ -80,7 +80,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
   const { id } = await params;
   if (!id) notFound();
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: product, error } = await supabase
     .from("products")
     .select(

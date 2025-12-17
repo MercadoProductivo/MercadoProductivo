@@ -40,7 +40,7 @@ type Props = { searchParams?: Promise<Record<string, string | string[] | undefin
 
 export default async function SubscribePage({ searchParams }: Props) {
   const sp = await searchParams;
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
@@ -200,4 +200,5 @@ export default async function SubscribePage({ searchParams }: Props) {
     redirect(`/dashboard/plan/failure?error=${encodeURIComponent(msg)}`);
   }
 }
+
 

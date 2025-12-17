@@ -4,28 +4,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPusher } from "@/lib/pusher/server";
 import { getSenderDisplayName } from "@/lib/names";
 import { rateLimitMiddleware } from "@/lib/rate-limit-kv";
+import { normalizeAvatarUrl } from "@/lib/avatar";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
-
-function normalizeAvatarUrl(raw: string | null | undefined, supabase: any): string | null {
-  if (!raw) return null;
-  const s = String(raw).trim();
-  if (!s) return null;
-  // Ya pública
-  if (/^https?:\/\//i.test(s)) return s;
-  if (s.includes("/storage/v1/object/public/avatars/") || s.includes("/object/public/avatars/")) return s;
-  // Tratar como path dentro del bucket
-  const path = s.replace(/^avatars\//, "");
-  try {
-    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-    return data?.publicUrl ?? null;
-  } catch {
-    return null;
-  }
-}
 
 const uuidSchema = z.string().uuid();
 
@@ -47,7 +31,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       );
     }
     const conversationId = validation.data;
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const {
       data: { user },
       error: userErr,
@@ -122,7 +106,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
           (base as any).email = emailMap[uid] ?? null;
           profMap[uid] = base as any;
         }
-      } catch {}
+      } catch { }
     }
 
     const enriched = (rows || []).map((m: any) => {
@@ -166,7 +150,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       );
     }
     const conversationId = validation.data;
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const {
       data: { user },
       error: userErr,
@@ -221,13 +205,13 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
           .eq("id", user.id)
           .maybeSingle();
         senderProfile = prof || null;
-      } catch {}
+      } catch { }
       // Email desde Auth admin
       let senderEmail: string | null = null;
       try {
         const { data: u } = await (admin as any).auth.admin.getUserById(user.id);
         senderEmail = (u?.user?.email || null) as any;
-      } catch {}
+      } catch { }
       const enrichedInserted = {
         ...inserted,
         sender_name: getSenderDisplayName(
@@ -248,24 +232,44 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       tasks.push(
         p.trigger(`private-conversation-${conversationId}`, "chat:message:new", enrichedInserted as any)
       );
-      // Refrescar bandeja solo de los otros miembros (evitar notificar al emisor)
+      // Refrescar bandeja y notificar a otros miembros
       for (const uid of memberIds) {
         if (String(uid) === String(user.id)) continue;
+        const userChannel = `private-user-${uid}`;
+
+        // 1. Enviar evento de mensaje nuevo para mostrar toast/notificación
         tasks.push(
-          p.trigger(`private-user-${uid}`, "chat:conversation:updated", { conversation_id: conversationId })
+          p.trigger(userChannel, "chat:message:new", {
+            ...enrichedInserted,
+            // Asegurar que message_new event tenga campos necesarios para toast
+            preview: body.substring(0, 100),
+          } as any)
+        );
+
+        // 2. Enviar evento de actualización de conversación para reordenar bandeja
+        tasks.push(
+          p.trigger(userChannel, "chat:conversation:updated", {
+            conversation_id: conversationId,
+            last_created_at: inserted.created_at,
+            preview: body.substring(0, 60),
+            unread_count: 1 // Referencial, el cliente recalculará
+          })
         );
       }
       await Promise.all(tasks);
     } catch (e) {
-      // swallow
+      console.error("[CHAT_POST] Error emitting events:", e);
     }
 
-    return NextResponse.json({ message: {
-      ...inserted,
-      sender_name: undefined, // por compatibilidad, el cliente ya usa enrichedInserted del realtime; opcionalmente podríamos devolver enrichedInserted aquí también
-      sender_email: undefined,
-      avatar_url: undefined,
-    } });
+
+    return NextResponse.json({
+      message: {
+        ...inserted,
+        sender_name: undefined, // por compatibilidad, el cliente ya usa enrichedInserted del realtime; opcionalmente podríamos devolver enrichedInserted aquí también
+        sender_email: undefined,
+        avatar_url: undefined,
+      }
+    });
   } catch (e: any) {
     return NextResponse.json({ error: "INTERNAL_ERROR", message: e?.message || String(e) }, { status: 500 });
   }

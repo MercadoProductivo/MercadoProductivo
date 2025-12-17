@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
 import { getPusher } from "@/lib/pusher/server";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const runtime = "nodejs";
+
+const uuidSchema = z.string().uuid();
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   if (process.env.FEATURE_CHAT_V2_ENABLED !== "true") {
@@ -15,10 +18,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   }
   try {
     const { id } = await ctx.params;
-    const conversationId = String(id || "");
-    if (!conversationId) return NextResponse.json({ error: "BAD_REQUEST" }, { status: 400 });
+    // Validate UUID
+    const validation = uuidSchema.safeParse(id);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "INVALID_CONVERSATION_ID", message: "ID de conversación inválido" },
+        { status: 400 }
+      );
+    }
+    const conversationId = validation.data;
 
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
     if (userErr || !user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 

@@ -12,7 +12,7 @@ import { getNormalizedRoleFromUser } from "@/lib/auth/role";
 export const dynamic = "force-dynamic";
 
 export default async function ProductsDashboardPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -227,4 +227,5 @@ export default async function ProductsDashboardPage() {
     </div>
   );
 }
+
 

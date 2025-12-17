@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getMPConfig, getMPHeaders } from "@/lib/mercadopago/config";
+import { getMPConfig } from "@/lib/mercadopago/config";
+import { BillingService } from "@/lib/services/billing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 10000) {
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(t));
-}
 
 /**
  * Cancela la suscripción en Mercado Pago y programa/ejecuta el cambio a plan gratis.
@@ -20,7 +15,7 @@ function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 10000
  */
 export async function POST(req: Request) {
   try {
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
@@ -69,26 +64,23 @@ export async function POST(req: Request) {
     let cancelledOld = false;
     if (oldPreId && hasMPConfig) {
       try {
-        const cancelRes = await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${oldPreId}`, {
-          method: "PUT",
-          headers: getMPHeaders(),
-          body: JSON.stringify({ status: "cancelled" }),
-        }, 10000);
-        cancelledOld = cancelRes.ok;
-        if (cancelRes.ok) {
-          await admin
-            .from("profiles")
-            .update({ mp_subscription_status: "cancelled" })
-            .eq("id", user.id);
-          try {
-            await admin.from("billing_events").insert({
-              user_id: user.id,
-              kind: "subscription_cancelled_by_user",
-              payload: { preapproval_id: oldPreId, mode, reason },
-            } as any);
-          } catch {}
-        }
-      } catch {}
+        await BillingService.cancelPreapproval(oldPreId);
+        cancelledOld = true;
+
+        await admin
+          .from("profiles")
+          .update({ mp_subscription_status: "cancelled" })
+          .eq("id", user.id);
+        try {
+          await admin.from("billing_events").insert({
+            user_id: user.id,
+            kind: "subscription_cancelled_by_user",
+            payload: { preapproval_id: oldPreId, mode, reason },
+          } as any);
+        } catch { }
+      } catch (err) {
+        console.error("Error cancelling subscription:", err);
+      }
     }
 
     // También cancelar un preapproval "nuevo" pausado por downgrade (si existiera)
@@ -104,20 +96,16 @@ export async function POST(req: Request) {
         const pausedEvt = Array.isArray(events) && events.length > 0 ? (events[0] as any) : null;
         const newPreId = pausedEvt?.payload?.preapproval_id || null;
         if (newPreId) {
-          await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${newPreId}`, {
-            method: "PUT",
-            headers: getMPHeaders(),
-            body: JSON.stringify({ status: "cancelled" }),
-          }, 10000).catch(() => {});
+          await BillingService.cancelPreapproval(newPreId).catch(() => { });
           try {
             await admin.from("billing_events").insert({
               user_id: user.id,
               kind: "preapproval_cancelled_on_user_cancel",
               payload: { preapproval_id: newPreId, reason: "user_cancelled" },
             } as any);
-          } catch {}
+          } catch { }
         }
-      } catch {}
+      } catch { }
     }
 
     // Resolver código de plan gratis
@@ -151,7 +139,7 @@ export async function POST(req: Request) {
           kind: "plan_changed_to_free_immediate_by_user",
           payload: { effective_at: activatedAt, cancelled_preapproval: oldPreId || null },
         } as any);
-      } catch {}
+      } catch { }
       return NextResponse.json({ ok: true, effective_at: activatedAt, immediate: true, cancelled: cancelledOld });
     } else {
       // Programar gratis al fin de ciclo
@@ -168,7 +156,7 @@ export async function POST(req: Request) {
           kind: "plan_change_to_free_scheduled_by_user",
           payload: { effective_at: effectiveAt.toISOString(), cancelled_preapproval: oldPreId || null },
         } as any);
-      } catch {}
+      } catch { }
       return NextResponse.json({ ok: true, effective_at: effectiveAt.toISOString(), immediate: false, cancelled: cancelledOld });
     }
   } catch (e: any) {

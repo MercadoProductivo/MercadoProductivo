@@ -11,7 +11,7 @@ export type SecurityEventType =
 
 export type Severity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
-interface SecurityEventData {
+export interface SecurityEventData {
     type: SecurityEventType;
     user_id?: string | null;
     user_email?: string | null;

@@ -8,6 +8,8 @@ export const runtime = "nodejs";
 
 export async function GET() {
   if (process.env.FEATURE_CHAT_V2_ENABLED !== "true") {
+    // Log debug info
+    console.log("Chat Inbox V2 Disabled by Env Var");
     return NextResponse.json(
       { error: "CHAT_DESHABILITADO", message: "El sistema de chat v2 está temporalmente deshabilitado." },
       { status: 410 }
@@ -15,19 +17,20 @@ export async function GET() {
   }
 
   try {
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const {
       data: { user },
       error: userErr,
     } = await supabase.auth.getUser();
     if (userErr || !user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
-    // Cargamos conversaciones con el RPC existente para reutilizar enriquecimiento y campos (preview, last_created_at, unread_count)
-    const { data, error } = await supabase.rpc("chat_list_conversations", {
-      p_user: user.id,
-      p_include_hidden: false,
+    // Use optimized V2 RPC
+    const { data, error } = await supabase.rpc("chat_get_conversations_v2", {
+      p_user_id: user.id
     });
+
     if (error) {
+      console.error("RPC Error Inbox Snapshot:", error);
       return NextResponse.json({ error: "RPC_ERROR", message: error.message }, { status: 500 });
     }
 
@@ -53,7 +56,7 @@ export async function GET() {
           seller_id: String(row?.counterparty_id || ""),
           sender_name: name,
           subject: String(row?.preview || "").trim() || "Nuevo mensaje",
-          body: undefined as string | undefined,
+          body: undefined as string | undefined, // V2 no body
         };
       })
       .filter((it: any) => it.id)
@@ -62,6 +65,8 @@ export async function GET() {
 
     return NextResponse.json({ unread_count, recent_threads });
   } catch (e: any) {
+    console.error("Internal Error Inbox Snapshot:", e);
     return NextResponse.json({ error: "INTERNAL_ERROR", message: e?.message || String(e) }, { status: 500 });
   }
 }
+

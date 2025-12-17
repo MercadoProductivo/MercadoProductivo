@@ -7,7 +7,7 @@ export const revalidate = 0;
 
 export async function POST(req: Request) {
   try {
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
@@ -48,4 +48,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e?.message || "Unexpected Error" }, { status: 500 });
   }
 }
+
 

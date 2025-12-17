@@ -3,7 +3,7 @@ import { createRouteClient } from "@/lib/supabase/server";
 import { pathFromPublicUrl, getPublicUrlForPath } from "@/lib/images";
 
 export async function POST() {
-  const supabase = createRouteClient();
+  const supabase = await createRouteClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -43,3 +43,4 @@ export async function POST() {
 
   return NextResponse.json({ updated });
 }
+

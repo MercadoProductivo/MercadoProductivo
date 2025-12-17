@@ -14,11 +14,12 @@ export async function POST(req: Request) {
   }
 
   try {
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const {
       data: { user },
       error: userErr,
     } = await supabase.auth.getUser();
+
     if (userErr || !user) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
 
     // pusher-js (v8) puede enviar JSON camelCase (socketId/channelName) o snake_case (socket_id/channel_name)
@@ -91,4 +92,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "INTERNAL_ERROR", message: e?.message || String(e) }, { status: 500 });
   }
 }
+
 

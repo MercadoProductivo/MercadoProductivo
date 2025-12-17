@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { normalizeAvatarUrl, initialFrom, avatarAltIncoming, avatarAltOutgoing } from "@/lib/user-display";
+import { MessageStatus, getMessageStatus } from "./message-status";
 
 export type ChatItem = {
   id: string;
@@ -12,7 +13,11 @@ export type ChatItem = {
   created_at: string;
   sender_name?: string;
   sender_email?: string;
-  delivery_status?: "sent" | "delivered" | "read";
+  delivery_status?: "sending" | "sent" | "delivered" | "read" | "failed";
+  delivered_at?: string | null;
+  read_at?: string | null;
+  sending?: boolean;
+  failed?: boolean;
   avatar_url?: string;
 };
 
@@ -21,7 +26,7 @@ export default function ChatMessages({ items, lastReadAt }: { items: ChatItem[];
   useEffect(() => {
     try {
       bottomRef.current?.scrollIntoView({ block: "end", inline: "nearest" });
-    } catch {}
+    } catch { }
   }, [items]);
   const lastReadAtMs = useMemo(() => (lastReadAt ? new Date(lastReadAt).getTime() : null), [lastReadAt]);
   const lastOutgoingReadId = useMemo(() => {
@@ -90,9 +95,23 @@ export default function ChatMessages({ items, lastReadAt }: { items: ChatItem[];
                   <span>
                     {new Date(it.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                   </span>
-                  {it.type === "outgoing" && lastOutgoingReadId === it.id && (
-                    <span className="ml-2 italic">Visto</span>
-                  )}
+                  {it.type === "outgoing" && (() => {
+                    // Calcular status de lectura basado en lastReadAt
+                    let computedStatus = it.delivery_status || getMessageStatus(it);
+                    // Si el mensaje fue creado antes o igual al último leído por el destinatario, marcarlo como "read"
+                    if (lastReadAtMs && computedStatus !== "failed" && computedStatus !== "sending") {
+                      const msgTime = new Date(it.created_at).getTime();
+                      if (msgTime <= lastReadAtMs) {
+                        computedStatus = "read";
+                      }
+                    }
+                    return (
+                      <MessageStatus
+                        status={computedStatus}
+                        className="ml-1"
+                      />
+                    );
+                  })()}
                 </div>
               </div>
               {it.type === "outgoing" && (

@@ -29,7 +29,7 @@ function formatDate(d?: string | null) {
 
 export default async function PlanPage({ searchParams }: Props) {
   const sp = await searchParams;
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
@@ -353,3 +353,4 @@ export default async function PlanPage({ searchParams }: Props) {
     </div>
   );
 }
+

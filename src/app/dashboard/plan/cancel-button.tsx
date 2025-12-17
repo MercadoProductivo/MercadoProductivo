@@ -38,6 +38,7 @@ export default function CancelSubscriptionButton({ disabled }: { disabled?: bool
         "Se cancelará la suscripción y el plan cambiará a 'free' al finalizar tu ciclo actual. ¿Deseas continuar?",
       confirmText: "Sí, cancelar al fin de ciclo",
       cancelText: "No, volver",
+      variant: "destructive",
     });
     if (!ok) return;
     await callCancel("at_period_end");

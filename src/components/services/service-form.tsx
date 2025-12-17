@@ -16,6 +16,7 @@ import Image from "next/image";
 import { UploadCloud, ChevronLeft, ChevronRight } from "lucide-react";
 import { buildSafeStoragePath } from "@/lib/images";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 // Provincias (reutilizamos de productos)
 const AR_PROVINCES = [
@@ -142,7 +143,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
-    mode: "onChange",
+    mode: "onBlur",
     defaultValues: {
       title: "",
       description: "",
@@ -203,9 +204,10 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
         const res = await fetch(url);
         if (!res.ok) throw new Error("No se pudieron cargar localidades");
         const json = await res.json();
-        const list: string[] = Array.isArray(json?.localidades)
+        const rawList: string[] = Array.isArray(json?.localidades)
           ? json.localidades.map((l: any) => String(l.nombre))
           : [];
+        const list = Array.from(new Set(rawList as string[]));
         setCities(list);
       } catch {
         setCities([]);
@@ -233,10 +235,10 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
         const res = await fetch(url);
         if (!res.ok) throw new Error("No se pudieron cargar localidades");
         const json = await res.json();
-        const list: string[] = Array.isArray(json?.localidades)
+        const rawList = Array.isArray(json?.localidades)
           ? json.localidades.map((l: any) => String(l.nombre))
           : [];
-        setter(list);
+        setter(Array.from(new Set(rawList as string[])));
       } catch {
         setter([]);
       } finally {
@@ -263,10 +265,10 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
         const res = await fetch(url);
         if (!res.ok) throw new Error("No se pudieron cargar localidades");
         const json = await res.json();
-        const list: string[] = Array.isArray(json?.localidades)
+        const rawList = Array.isArray(json?.localidades)
           ? json.localidades.map((l: any) => String(l.nombre))
           : [];
-        setter(list);
+        setter(Array.from(new Set(rawList as string[])));
       } catch {
         setter([]);
       } finally {
@@ -379,7 +381,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
       requestAnimationFrame(() => {
         try {
           el.selectionStart = el.selectionEnd = start + sanitized.length;
-        } catch {}
+        } catch { }
       });
     }
   };
@@ -412,7 +414,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
       requestAnimationFrame(() => {
         try {
           el.selectionStart = el.selectionEnd = start + sanitized.length;
-        } catch {}
+        } catch { }
       });
     }
   };
@@ -433,18 +435,18 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
       ",",
       ".",
     ];
-    
+
     // Permitir teclas de control
     if (allowed.includes(e.key) || (ctrlOrCmd && ["a", "c", "v", "x"].includes(e.key.toLowerCase()))) {
       return;
     }
-    
+
     // Bloquear caracteres no numéricos
     if (!/^[0-9]$/.test(e.key)) {
       e.preventDefault();
       return;
     }
-    
+
     // Limitar a 10 caracteres
     const currentValue = (e.target as HTMLInputElement).value;
     if (currentValue.length >= 10) {
@@ -636,8 +638,8 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="title" className={showError("title") ? "text-red-600" : undefined}>
-          Título <span className="text-red-600">*</span>
+        <Label htmlFor="title" className={showError("title") ? "text-red-500" : undefined}>
+          Título <span className="text-red-500">*</span>
         </Label>
         <Input
           id="title"
@@ -652,13 +654,13 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
         />
         <div className="text-xs text-muted-foreground">{(form.watch("title")?.length ?? 0)} / 20 caracteres</div>
         {showError("title") && (
-          <p className="text-xs text-red-600">{form.getFieldState("title", form.formState).error?.message}</p>
+          <p role="alert" className="text-xs text-red-500">{form.getFieldState("title", form.formState).error?.message}</p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description" className={showError("description") ? "text-red-600" : undefined}>
-          Descripción <span className="text-red-600">*</span>
+        <Label htmlFor="description" className={showError("description") ? "text-red-500" : undefined}>
+          Descripción <span className="text-red-500">*</span>
         </Label>
         <div className="rounded border border-amber-300 bg-amber-50 p-2 text-[12px] text-amber-900">
           Seguridad: no incluyas datos personales o sensibles (teléfono, dirección, email, DNI, CBU, etc.).
@@ -678,13 +680,13 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
         />
         <div className="text-[11px] text-muted-foreground">{(form.watch("description")?.length ?? 0)} / 250 caracteres</div>
         {showError("description") && (
-          <p className="text-xs text-red-600">{form.getFieldState("description", form.formState).error?.message}</p>
+          <p role="alert" className="text-xs text-red-500">{form.getFieldState("description", form.formState).error?.message}</p>
         )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="space-y-2 sm:col-span-1">
-          <Label className={showError("category") ? "text-red-600" : undefined}>Categoría <span className="text-red-600">*</span></Label>
+          <Label className={showError("category") ? "text-red-500" : undefined}>Categoría <span className="text-red-500">*</span></Label>
           <Select
             value={form.watch("category") || ""}
             onValueChange={(v) => form.setValue("category", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true })}
@@ -700,22 +702,22 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
             </SelectContent>
           </Select>
           {showError("category") && (
-            <p className="text-xs text-red-600">{form.getFieldState("category", form.formState).error?.message}</p>
+            <p role="alert" className="text-xs text-red-500">{form.getFieldState("category", form.formState).error?.message}</p>
           )}
         </div>
         <div className="space-y-2 sm:col-span-1">
-          <Label className={showError("price") ? "text-red-600" : undefined}>Precio (ARS) <span className="text-muted-foreground">(opcional)</span></Label>
-          <Input 
-            inputMode="decimal" 
-            placeholder="0,00" 
+          <Label className={showError("price") ? "text-red-500" : undefined}>Precio (ARS) <span className="text-muted-foreground">(opcional)</span></Label>
+          <Input
+            inputMode="decimal"
+            placeholder="0,00"
             maxLength={10}
-            {...form.register("price")} 
-            onKeyDown={handlePriceKeyDown} 
-            disabled={saving} 
-            className={fieldErrorClass("price")} 
+            {...form.register("price")}
+            onKeyDown={handlePriceKeyDown}
+            disabled={saving}
+            className={fieldErrorClass("price")}
           />
           {showError("price") && (
-            <p className="text-xs text-red-600">{form.getFieldState("price", form.formState).error?.message}</p>
+            <p role="alert" className="text-xs text-red-500">{form.getFieldState("price", form.formState).error?.message}</p>
           )}
         </div>
       </div>
@@ -724,7 +726,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
       {selectedCategory !== TRANSPORT_CATEGORY ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label className={showError("province") ? "text-red-600" : undefined}>Provincia <span className="text-red-600">*</span></Label>
+            <Label className={showError("province") ? "text-red-500" : undefined}>Provincia <span className="text-red-500">*</span></Label>
             <Select value={form.watch("province") || ""} onValueChange={(v) => form.setValue("province", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} disabled={saving}>
               <SelectTrigger className={fieldErrorClass("province")}>
                 <SelectValue placeholder="Selecciona provincia" />
@@ -736,11 +738,11 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
               </SelectContent>
             </Select>
             {showError("province") && (
-              <p className="text-xs text-red-600">{form.getFieldState("province", form.formState).error?.message}</p>
+              <p role="alert" className="text-xs text-red-500">{form.getFieldState("province", form.formState).error?.message}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label className={showError("city") ? "text-red-600" : undefined}>Localidad <span className="text-red-600">*</span></Label>
+            <Label className={showError("city") ? "text-red-500" : undefined}>Localidad <span className="text-red-500">*</span></Label>
             <Select value={form.watch("city") || ""} onValueChange={(v) => form.setValue("city", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} disabled={saving || !form.watch("province") || loadingCities}>
               <SelectTrigger className={fieldErrorClass("city")}>
                 <SelectValue placeholder={loadingCities ? "Cargando..." : (!form.watch("province") ? "Selecciona provincia primero" : "Selecciona localidad")} />
@@ -757,7 +759,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
               </SelectContent>
             </Select>
             {showError("city") && (
-              <p className="text-xs text-red-600">{form.getFieldState("city", form.formState).error?.message}</p>
+              <p role="alert" className="text-xs text-red-500">{form.getFieldState("city", form.formState).error?.message}</p>
             )}
           </div>
         </div>
@@ -765,7 +767,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Origen */}
           <div className="space-y-2">
-            <Label className={showError("origin_province") ? "text-red-600" : undefined}>Provincia de salida <span className="text-red-600">*</span></Label>
+            <Label className={showError("origin_province") ? "text-red-500" : undefined}>Provincia de salida <span className="text-red-500">*</span></Label>
             <Select value={form.watch("origin_province") || ""} onValueChange={(v) => form.setValue("origin_province", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} disabled={saving}>
               <SelectTrigger className={fieldErrorClass("origin_province")}>
                 <SelectValue placeholder="Selecciona provincia" />
@@ -777,9 +779,9 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
               </SelectContent>
             </Select>
             {showError("origin_province") && (
-              <p className="text-xs text-red-600">{form.getFieldState("origin_province", form.formState).error?.message}</p>
+              <p role="alert" className="text-xs text-red-500">{form.getFieldState("origin_province", form.formState).error?.message}</p>
             )}
-            <Label className={showError("origin_city") ? "text-red-600" : undefined}>Localidad de salida <span className="text-red-600">*</span></Label>
+            <Label className={showError("origin_city") ? "text-red-500" : undefined}>Localidad de salida <span className="text-red-500">*</span></Label>
             <Select value={form.watch("origin_city") || ""} onValueChange={(v) => form.setValue("origin_city", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} disabled={saving || !form.watch("origin_province") || loadingOriginCities}>
               <SelectTrigger className={fieldErrorClass("origin_city")}>
                 <SelectValue placeholder={loadingOriginCities ? "Cargando..." : (!form.watch("origin_province") ? "Selecciona provincia primero" : "Selecciona localidad")} />
@@ -796,12 +798,12 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
               </SelectContent>
             </Select>
             {showError("origin_city") && (
-              <p className="text-xs text-red-600">{form.getFieldState("origin_city", form.formState).error?.message}</p>
+              <p role="alert" className="text-xs text-red-500">{form.getFieldState("origin_city", form.formState).error?.message}</p>
             )}
           </div>
           {/* Destino */}
           <div className="space-y-2">
-            <Label className={showError("dest_province") ? "text-red-600" : undefined}>Provincia de llegada <span className="text-red-600">*</span></Label>
+            <Label className={showError("dest_province") ? "text-red-500" : undefined}>Provincia de llegada <span className="text-red-500">*</span></Label>
             <Select value={form.watch("dest_province") || ""} onValueChange={(v) => form.setValue("dest_province", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} disabled={saving}>
               <SelectTrigger className={fieldErrorClass("dest_province")}>
                 <SelectValue placeholder="Selecciona provincia" />
@@ -813,9 +815,9 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
               </SelectContent>
             </Select>
             {showError("dest_province") && (
-              <p className="text-xs text-red-600">{form.getFieldState("dest_province", form.formState).error?.message}</p>
+              <p role="alert" className="text-xs text-red-500">{form.getFieldState("dest_province", form.formState).error?.message}</p>
             )}
-            <Label className={showError("dest_city") ? "text-red-600" : undefined}>Localidad de llegada <span className="text-red-600">*</span></Label>
+            <Label className={showError("dest_city") ? "text-red-500" : undefined}>Localidad de llegada <span className="text-red-500">*</span></Label>
             <Select value={form.watch("dest_city") || ""} onValueChange={(v) => form.setValue("dest_city", v, { shouldValidate: true, shouldDirty: true, shouldTouch: true })} disabled={saving || !form.watch("dest_province") || loadingDestCities}>
               <SelectTrigger className={fieldErrorClass("dest_city")}>
                 <SelectValue placeholder={loadingDestCities ? "Cargando..." : (!form.watch("dest_province") ? "Selecciona provincia primero" : "Selecciona localidad")} />
@@ -832,7 +834,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
               </SelectContent>
             </Select>
             {showError("dest_city") && (
-              <p className="text-xs text-red-600">{form.getFieldState("dest_city", form.formState).error?.message}</p>
+              <p role="alert" className="text-xs text-red-500">{form.getFieldState("dest_city", form.formState).error?.message}</p>
             )}
           </div>
         </div>
@@ -948,9 +950,9 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
       </div>
 
       <div className="pt-2">
-        <Button type="submit" disabled={saving || limitReached} className="bg-orange-500 hover:bg-orange-600">
-          {saving ? "Publicando..." : "Publicar servicio"}
-        </Button>
+        <SubmitButton isLoading={saving} loadingText="Publicando..." className="bg-orange-500 hover:bg-orange-600">
+          Publicar servicio
+        </SubmitButton>
       </div>
     </form>
   );

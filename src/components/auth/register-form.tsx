@@ -13,6 +13,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ShoppingCart, Store, UserPlus } from "lucide-react";
 import { toSpanishErrorMessage } from "@/lib/i18n/errors";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
+import { useRef } from "react";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 type RegisterFormValues = Omit<RegisterInput, "acceptTerms"> & { acceptTerms: boolean };
 
@@ -20,10 +23,12 @@ export default function RegisterForm() {
   const router = useRouter();
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    mode: "onChange",
+    mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
       firstName: "",
@@ -52,8 +57,25 @@ export default function RegisterForm() {
   }
 
   async function onSubmit(values: RegisterFormValues) {
+    // Validar CAPTCHA antes de nada
+    if (!captchaToken) {
+      toast.error("Por favor completa la verificación de seguridad");
+      return;
+    }
+
     setLoading(true);
     try {
+      // 1. Validar CAPTCHA en servidor
+      const captchaRes = await fetch("/api/auth/verify-captcha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: captchaToken }),
+      });
+
+      if (!captchaRes.ok) {
+        const err = await captchaRes.json();
+        throw new Error(err.error || "Error de verificación de seguridad");
+      }
       // Normalizar email
       const emailNormalized = (values.email || '').trim().toLowerCase();
 
@@ -114,7 +136,7 @@ export default function RegisterForm() {
       if (signUpError) throw signUpError;
 
       // Asegurar que no quede sesión activa automáticamente tras el registro
-      try { await supabase.auth.signOut(); } catch {}
+      try { await supabase.auth.signOut(); } catch { }
 
       toast.success("Te enviamos un correo para verificar tu cuenta");
       router.replace(`/auth/login?check_email=1&email=${encodeURIComponent(emailNormalized)}`);
@@ -130,6 +152,7 @@ export default function RegisterForm() {
         console.error('Error en el registro:', e);
         toast.error(toSpanishErrorMessage(e, "Error al crear la cuenta"));
       }
+      turnstileRef.current?.reset(); // Resetear CAPTCHA en error
     } finally {
       setLoading(false);
     }
@@ -140,38 +163,38 @@ export default function RegisterForm() {
       {/* Nombre y Apellido */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="firstName">Nombre</Label>
+          <Label htmlFor="firstName">Nombre <span className="text-red-500">*</span></Label>
           <Input id="firstName" autoComplete="given-name" placeholder="Tu nombre" {...form.register("firstName")} {...fieldAttrs("firstName")} />
-          <p className={`min-h-[16px] text-sm ${form.formState.errors.firstName ? "text-red-500" : "opacity-0"}`}>
+          <p role="alert" className={`min-h-[16px] text-sm ${form.formState.errors.firstName ? "text-red-500" : "opacity-0"}`}>
             {form.formState.errors.firstName?.message || "\u00A0"}
           </p>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lastName">Apellido</Label>
+          <Label htmlFor="lastName">Apellido <span className="text-red-500">*</span></Label>
           <Input id="lastName" autoComplete="family-name" placeholder="Tu apellido" {...form.register("lastName")} {...fieldAttrs("lastName")} />
-          <p className={`min-h-[16px] text-sm ${form.formState.errors.lastName ? "text-red-500" : "opacity-0"}`}>
+          <p role="alert" className={`min-h-[16px] text-sm ${form.formState.errors.lastName ? "text-red-500" : "opacity-0"}`}>
             {form.formState.errors.lastName?.message || "\u00A0"}
           </p>
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico</Label>
-        <Input 
-          id="email" 
-          type="email" 
-          autoComplete="email" 
-          placeholder="nombre@ejemplo.com" 
-          {...form.register("email")} 
+        <Label htmlFor="email">Correo electrónico <span className="text-red-500">*</span></Label>
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          placeholder="nombre@ejemplo.com"
+          {...form.register("email")}
           {...fieldAttrs("email")}
         />
-        <p className={`min-h-[16px] text-sm ${form.formState.errors.email ? "text-red-400" : "opacity-0"}`}>
+        <p role="alert" className={`min-h-[16px] text-sm ${form.formState.errors.email ? "text-red-400" : "opacity-0"}`}>
           {form.formState.errors.email?.message || "\u00A0"}
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
+        <Label htmlFor="password">Contraseña <span className="text-red-500">*</span></Label>
         <PasswordInput id="password" autoComplete="new-password" {...form.register("password")} {...fieldAttrs("password")} />
         <p className="text-xs text-[var(--text-secondary)]">Debe contener mayúscula, minúscula y número</p>
         <p className={`min-h-[16px] text-sm ${form.formState.errors.password ? "text-red-400" : "opacity-0"}`}>
@@ -179,12 +202,12 @@ export default function RegisterForm() {
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
-        <PasswordInput 
-          id="confirmPassword" 
-          autoComplete="new-password" 
-          {...form.register("confirmPassword")} 
-          {...fieldAttrs("confirmPassword")} 
+        <Label htmlFor="confirmPassword">Confirmar contraseña <span className="text-red-500">*</span></Label>
+        <PasswordInput
+          id="confirmPassword"
+          autoComplete="new-password"
+          {...form.register("confirmPassword")}
+          {...fieldAttrs("confirmPassword")}
         />
         <p className={`min-h-[16px] text-sm ${form.formState.errors.confirmPassword ? "text-red-400" : "opacity-0"}`}>
           {form.formState.errors.confirmPassword?.message || "\u00A0"}
@@ -197,24 +220,22 @@ export default function RegisterForm() {
           <button
             type="button"
             onClick={() => form.setValue("userType", "buyer")}
-            className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition ${
-              userType === "buyer"
-                ? "border-orange-500 bg-orange-500 text-white shadow-sm"
-                : "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
-            }`}
+            className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition ${userType === "buyer"
+              ? "border-orange-500 bg-orange-500 text-white shadow-sm"
+              : "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+              }`}
           >
-            <ShoppingCart size={16}/> Comprador
+            <ShoppingCart size={16} /> Comprador
           </button>
           <button
             type="button"
             onClick={() => form.setValue("userType", "seller")}
-            className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition ${
-              userType === "seller"
-                ? "border-orange-500 bg-orange-500 text-white shadow-sm"
-                : "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
-            }`}
+            className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition ${userType === "seller"
+              ? "border-orange-500 bg-orange-500 text-white shadow-sm"
+              : "border-[var(--border-light)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]"
+              }`}
           >
-            <Store size={16}/> Vendedor
+            <Store size={16} /> Vendedor
           </button>
         </div>
         {form.formState.errors.userType && (
@@ -253,23 +274,26 @@ export default function RegisterForm() {
         )}
       </div>
 
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={loading || !form.formState.isValid}
-      >
-        {loading ? (
-          <span className="flex items-center gap-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            Creando cuenta...
-          </span>
-        ) : (
-          <span className="flex items-center gap-2">
-            <UserPlus size={16} />
-            Crear cuenta
-          </span>
-        )}
-      </Button>
+      <div className="flex justify-center py-2">
+        <Turnstile
+          ref={turnstileRef}
+          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+          onSuccess={(token) => setCaptchaToken(token)}
+          onError={() => setCaptchaToken(null)}
+          onExpire={() => setCaptchaToken(null)}
+          options={{
+            theme: "light",
+            size: "flexible",
+          }}
+        />
+      </div>
+
+      <SubmitButton isLoading={loading} loadingText="Creando cuenta...">
+        <span className="flex items-center gap-2">
+          <UserPlus size={16} />
+          Crear cuenta
+        </span>
+      </SubmitButton>
     </form>
   );
 }

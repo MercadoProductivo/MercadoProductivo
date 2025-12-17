@@ -13,7 +13,8 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { toSpanishErrorMessage } from "@/lib/i18n/errors";
 import { LogIn } from "lucide-react";
-import { logSecurityEvent } from "@/lib/security/security-logger";
+import { logSecurityEventAction } from "@/app/actions/security";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function LoginForm() {
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    mode: "onChange",
+    mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
       email: "",
@@ -55,22 +56,30 @@ export default function LoginForm() {
       });
 
       if (error) {
-        // Log failed login attempt
-        await logSecurityEvent({
-          type: 'LOGIN_FAILED',
-          user_email: values.email,
-          metadata: { error_message: error.message },
-          severity: 'MEDIUM'
-        });
+        // Log failed login attempt via Server Action (Non-blocking)
+        try {
+          await logSecurityEventAction({
+            type: 'LOGIN_FAILED',
+            user_email: values.email,
+            metadata: { error_message: error.message },
+            severity: 'MEDIUM'
+          });
+        } catch (logError) {
+          console.error("Failed to log login failure:", logError);
+        }
         throw error;
       }
 
-      // Log successful login
-      await logSecurityEvent({
-        type: 'LOGIN_SUCCESS',
-        user_email: values.email,
-        severity: 'LOW'
-      });
+      // Log successful login via Server Action (Non-blocking)
+      try {
+        await logSecurityEventAction({
+          type: 'LOGIN_SUCCESS',
+          user_email: values.email,
+          severity: 'LOW'
+        });
+      } catch (logError) {
+        console.error("Failed to log login success:", logError);
+      }
 
       toast.success("¡Bienvenido! 👋");
       router.replace("/dashboard");
@@ -85,7 +94,7 @@ export default function LoginForm() {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico</Label>
+        <Label htmlFor="email">Correo electrónico <span className="text-red-500">*</span></Label>
         <Input id="email" type="email" autoComplete="email" placeholder="nombre@ejemplo.com" {...form.register("email")} {...fieldAttrs("email")} />
         <p
           className={`min-h-[20px] text-sm ${form.formState.errors.email ? "text-red-400" : "opacity-0"}`}
@@ -95,7 +104,7 @@ export default function LoginForm() {
         </p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
+        <Label htmlFor="password">Contraseña <span className="text-red-500">*</span></Label>
         <PasswordInput id="password" autoComplete="current-password" {...form.register("password")} {...fieldAttrs("password")} />
         <p
           className={`min-h-[20px] text-sm ${form.formState.errors.password ? "text-red-400" : "opacity-0"}`}
@@ -120,9 +129,9 @@ export default function LoginForm() {
         <Label htmlFor="remember" className="text-sm text-muted-foreground">Recordarme</Label>
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full">
-        <LogIn size={16} /> {loading ? "Ingresando..." : "Iniciar sesión"}
-      </Button>
+      <SubmitButton isLoading={loading} text="Iniciar sesión" loadingText="Ingresando...">
+        <LogIn size={16} className="mr-2" /> Iniciar sesión
+      </SubmitButton>
     </form>
   );
 }

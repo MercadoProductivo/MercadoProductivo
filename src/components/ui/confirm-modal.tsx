@@ -1,95 +1,147 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type ConfirmOptions = {
   title?: string;
   description?: string;
   confirmText?: string;
   cancelText?: string;
+  variant?: "default" | "destructive";
 };
 
-function Dialog({
+function ConfirmDialog({
   open,
-  title = "¿Salir sin guardar?",
-  description = "Tienes cambios sin guardar. Si sales, se perderán.",
-  confirmText = "Salir sin guardar",
+  title,
+  description,
+  confirmText = "Confirmar",
   cancelText = "Cancelar",
+  variant = "default",
   onConfirm,
   onCancel,
-}: {
+  onAfterClose,
+}: ConfirmOptions & {
   open: boolean;
-  title?: string;
-  description?: string;
-  confirmText?: string;
-  cancelText?: string;
   onConfirm: () => void;
   onCancel: () => void;
+  onAfterClose: () => void;
 }) {
-  if (!open) return null;
+  const [isOpen, setIsOpen] = useState(open);
+
+  useEffect(() => {
+    setIsOpen(open);
+  }, [open]);
+
+  const handleOpenChange = (value: boolean) => {
+    setIsOpen(value);
+    if (!value) {
+      // Si se cierra por interacción externa (ESC), tratamos como cancel
+      // Damos un pequeño delay para permitir la animación de salida
+      setTimeout(() => {
+        onCancel();
+        onAfterClose();
+      }, 300);
+    }
+  };
+
+  const handleConfirm = (e: React.MouseEvent) => {
+    e.preventDefault(); // Evitar cierre automático inmediato de Radix para controlar fn
+    setIsOpen(false);
+    setTimeout(() => {
+      onConfirm();
+      onAfterClose();
+    }, 300);
+  };
+
+  const handleCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsOpen(false);
+    setTimeout(() => {
+      onCancel();
+      onAfterClose();
+    }, 300);
+  };
+
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" />
-      <div className="relative z-[1001] w-[92vw] max-w-md rounded-lg bg-white shadow-xl border">
-        <div className="p-5">
-          <h2 className="text-lg font-semibold mb-2">{title}</h2>
-          <p className="text-sm text-gray-600 mb-5">{description}</p>
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium bg-white hover:bg-gray-50"
-            >
-              {cancelText}
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              className="inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-            >
-              {confirmText}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancel}>{cancelText}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirm}
+            className={variant === "destructive" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+          >
+            {confirmText}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
-// Imperative confirm modal that returns a Promise<boolean>
-export default function confirmModal(options: ConfirmOptions = {}): Promise<boolean> {
+export default function confirmModal({
+  title = "¿Estás seguro?",
+  description = "Esta acción no se puede deshacer.",
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
+  variant = "default",
+}: ConfirmOptions = {}): Promise<boolean> {
   if (typeof window === "undefined") return Promise.resolve(false);
+
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
 
   return new Promise((resolve) => {
+    let resolved = false;
+
     const cleanup = () => {
       try {
         root.unmount();
-      } catch {}
+      } catch { }
       container.remove();
     };
 
     const handleConfirm = () => {
-      resolve(true);
-      cleanup();
+      if (!resolved) {
+        resolved = true;
+        resolve(true);
+      }
     };
+
     const handleCancel = () => {
-      resolve(false);
-      cleanup();
+      if (!resolved) {
+        resolved = true;
+        resolve(false);
+      }
     };
 
     root.render(
-      <Dialog
+      <ConfirmDialog
         open={true}
-        title={options.title}
-        description={options.description}
-        confirmText={options.confirmText}
-        cancelText={options.cancelText}
+        title={title}
+        description={description}
+        confirmText={confirmText}
+        cancelText={cancelText}
+        variant={variant}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+        onAfterClose={cleanup}
       />
     );
   });

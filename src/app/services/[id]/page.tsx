@@ -29,7 +29,7 @@ type Service = {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   try {
     const { id } = await params;
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: service } = await supabase
       .from("services")
       .select("id,title,description")
@@ -75,7 +75,7 @@ export default async function PublicServicePage({ params }: { params: Promise<{ 
   const { id } = await params;
   if (!id) notFound();
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: service, error } = await supabase
     .from("services")
     .select(
@@ -122,7 +122,7 @@ export default async function PublicServicePage({ params }: { params: Promise<{ 
         .eq("service_id", service.id)
         .order("id", { ascending: true });
       images = (gallery || []).map((g: any) => g.url as string);
-    } catch {}
+    } catch { }
   }
 
   // Cargar perfil del vendedor desde endpoint público (consistente con productos)

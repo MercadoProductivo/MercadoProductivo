@@ -109,7 +109,7 @@ const getPlanTier = (p: PlanRow): "gratis" | "plus" | "deluxe" | "other" => {
 
 export default async function PlanesPage({ searchParams }: { searchParams?: { interval?: string } }) {
   // Estado de sesión y plan actual
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -572,3 +572,4 @@ export default async function PlanesPage({ searchParams }: { searchParams?: { in
     </main>
   );
 }
+

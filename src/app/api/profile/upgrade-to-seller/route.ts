@@ -3,7 +3,7 @@ import { createRouteClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST() {
-  const supabase = createRouteClient();
+  const supabase = await createRouteClient();
 
   const {
     data: { user },
@@ -36,3 +36,4 @@ export async function POST() {
 
   return NextResponse.json({ ok: true });
 }
+

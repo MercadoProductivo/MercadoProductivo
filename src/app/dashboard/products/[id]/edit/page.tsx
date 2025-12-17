@@ -34,10 +34,10 @@ interface Profile {
   postal_code?: string;
 }
 
-export default async function EditProductPage({ 
-  params 
-}: { 
-  params: Promise<{ id: string }> 
+export default async function EditProductPage({
+  params
+}: {
+  params: Promise<{ id: string }>
 }) {
   const { id } = await params;
   // Validar parámetro ID
@@ -45,8 +45,8 @@ export default async function EditProductPage({
     notFound();
   }
 
-  const supabase = createClient();
-  
+  const supabase = await createClient();
+
   try {
     const {
       data: { user },
@@ -101,7 +101,7 @@ export default async function EditProductPage({
 
     // Verificar campos faltantes del perfil para mostrar advertencias
     let missingFields: string[] = [];
-    
+
     try {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
@@ -146,11 +146,11 @@ export default async function EditProductPage({
               Modifica la información de tu producto &ldquo;{product.title}&rdquo;
             </p>
           </div>
-          <Link 
-            href="/dashboard/products" 
+          <Link
+            href="/dashboard/products"
             className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
           >
-            <ArrowLeft size={16} /> 
+            <ArrowLeft size={16} />
             Volver a mis productos
           </Link>
         </div>
@@ -187,7 +187,7 @@ export default async function EditProductPage({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ProductEditForm 
+            <ProductEditForm
               product={product}
               canPublish={missingFields.length === 0}
             />

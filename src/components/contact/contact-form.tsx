@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export default function ContactForm() {
   const [loading, setLoading] = useState(false);
@@ -71,7 +72,7 @@ export default function ContactForm() {
   return (
     <form onSubmit={onSubmit} noValidate onInvalid={(e) => e.preventDefault()} className="grid gap-4">
       <div className="grid gap-2">
-        <Label htmlFor="nombre">Nombre Completo *</Label>
+        <Label htmlFor="nombre">Nombre Completo <span className="text-red-500">*</span></Label>
         <Input
           id="nombre"
           name="nombre"
@@ -83,11 +84,11 @@ export default function ContactForm() {
           aria-describedby={errors.nombre ? "nombre-error" : undefined}
         />
         {errors.nombre && (
-          <p id="nombre-error" className="text-sm text-destructive">{errors.nombre}</p>
+          <p role="alert" id="nombre-error" className="text-sm text-destructive">{errors.nombre}</p>
         )}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="email">Email *</Label>
+        <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
         <Input
           id="email"
           name="email"
@@ -100,11 +101,11 @@ export default function ContactForm() {
           aria-describedby={errors.email ? "email-error" : undefined}
         />
         {errors.email && (
-          <p id="email-error" className="text-sm text-destructive">{errors.email}</p>
+          <p role="alert" id="email-error" className="text-sm text-destructive">{errors.email}</p>
         )}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="asunto">Asunto *</Label>
+        <Label htmlFor="asunto">Asunto <span className="text-red-500">*</span></Label>
         <Input
           id="asunto"
           name="asunto"
@@ -116,11 +117,11 @@ export default function ContactForm() {
           aria-describedby={errors.asunto ? "asunto-error" : undefined}
         />
         {errors.asunto && (
-          <p id="asunto-error" className="text-sm text-destructive">{errors.asunto}</p>
+          <p role="alert" id="asunto-error" className="text-sm text-destructive">{errors.asunto}</p>
         )}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="mensaje">Mensaje *</Label>
+        <Label htmlFor="mensaje">Mensaje <span className="text-red-500">*</span></Label>
         <Textarea
           id="mensaje"
           name="mensaje"
@@ -133,12 +134,12 @@ export default function ContactForm() {
           aria-describedby={errors.mensaje ? "mensaje-error" : undefined}
         />
         {errors.mensaje && (
-          <p id="mensaje-error" className="text-sm text-destructive">{errors.mensaje}</p>
+          <p role="alert" id="mensaje-error" className="text-sm text-destructive">{errors.mensaje}</p>
         )}
       </div>
-      <Button type="submit" disabled={loading}>
-        {loading ? "Enviando..." : "Enviar Mensaje"}
-      </Button>
+      <SubmitButton isLoading={loading} loadingText="Enviando...">
+        Enviar Mensaje
+      </SubmitButton>
     </form>
   );
 }

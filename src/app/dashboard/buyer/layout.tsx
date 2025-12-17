@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function BuyerDashboardLayout({ children }: { children: ReactNode }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -14,3 +14,4 @@ export default async function BuyerDashboardLayout({ children }: { children: Rea
   // Unificado: redirigir siempre al dashboard principal
   redirect("/dashboard/profile");
 }
+

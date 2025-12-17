@@ -7,7 +7,7 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const supabase = createRouteClient();
+  const supabase = await createRouteClient();
 
   try {
     const { searchParams } = new URL(req.url);
@@ -369,3 +369,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: e?.message || "Unexpected error" }, { status: 500 });
   }
 }
+

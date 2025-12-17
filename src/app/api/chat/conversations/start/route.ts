@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const supabase = createRouteClient();
+    const supabase = await createRouteClient();
     const {
       data: { user },
       error: userErr,
@@ -84,4 +84,5 @@ export async function POST(req: Request) {
     );
   }
 }
+
 
