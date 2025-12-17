@@ -2,24 +2,9 @@
 
 import React, { useEffect, useRef } from "react";
 
+// Declaramos solo cfTurnstileOnLoad ya que turnstile viene de @marsidev/react-turnstile
 declare global {
   interface Window {
-    turnstile?: {
-      render: (
-        el: HTMLElement,
-        options: {
-          sitekey: string;
-          callback?: (token: string) => void;
-          "expired-callback"?: () => void;
-          "error-callback"?: () => void;
-          theme?: "light" | "dark" | "auto";
-          size?: "normal" | "compact" | "invisible" | "flexible";
-          refresh?: "auto" | "manual";
-        }
-      ) => string;
-      remove?: (widgetId: string) => void;
-      reset?: (widgetId?: string) => void;
-    };
     cfTurnstileOnLoad?: () => void;
   }
 }
@@ -52,7 +37,6 @@ export default function Turnstile({
           sitekey: siteKey,
           theme,
           size: "flexible",
-          refresh: "auto",
           callback: (token: string) => onToken?.(token),
           "expired-callback": () => onExpire?.(),
           "error-callback": () => onExpire?.(),
@@ -83,7 +67,7 @@ export default function Turnstile({
 
     return () => {
       if (window.turnstile && widgetIdRef.current && typeof window.turnstile.remove === "function") {
-        try { window.turnstile.remove(widgetIdRef.current); } catch {}
+        try { window.turnstile.remove(widgetIdRef.current); } catch { }
       }
       widgetIdRef.current = null;
     };
