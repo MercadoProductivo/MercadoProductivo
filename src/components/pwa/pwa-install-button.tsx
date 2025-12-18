@@ -21,27 +21,35 @@ export default function PWAInstallButton({ className, fullWidth, size = "sm", va
   // Mostramos siempre el botón. Si ya está instalada, al hacer click mostramos un toast informativo.
 
   const handleClick = async () => {
-    // Re-evaluar en tiempo real por si el estado aún no se sincronizó
+    // Re-evaluar en tiempo real
     const standaloneNow = typeof window !== 'undefined' && (
       (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
       (navigator as any).standalone === true
     );
+
     if (standaloneNow || isStandalone) {
-      toast.error("La app ya está instalada en este dispositivo.");
+      toast.success("Ya estás usando la aplicación instalada.");
       return;
     }
 
-    // En iOS no mostramos modal ni toast: no hay beforeinstallprompt programable.
-    if (isIOS) return;
-    if (canInstall) {
-      await install();
-    } else {
-      // Fallback: si el SW aún no controla la página en producción, pedir recargar
-      const needsReload = typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !navigator.serviceWorker.controller;
-      if (needsReload) {
-        toast.error("La instalación estará disponible tras recargar la página.");
+    const result = await install();
+
+    if (result === 'accepted') {
+      toast.success("¡Instalación iniciada correctamente!");
+    } else if (result === 'ios-instructions') {
+      toast.info(
+        "Para instalar en iOS: pulsa el icono de 'Compartir' (el cuadrado con flecha) y selecciona 'Añadir a pantalla de inicio'.",
+        { duration: 6000 }
+      );
+    } else if (result === 'unavailable') {
+      // Fallback: si el SW aún no controla la página
+      const swLoading = typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !navigator.serviceWorker.controller;
+      if (swLoading) {
+        toast.error("El sistema de instalación se está preparando. Prueba a recargar la página en unos segundos.");
       } else {
-        toast.error("La app ya está instalada en este dispositivo o la instalación no está disponible en este momento.");
+        toast.error(
+          "La instalación no está disponible en este navegador. Asegúrate de estar usando Chrome, Edge o Safari (iOS) y de no estar en modo incógnito."
+        );
       }
     }
   };
