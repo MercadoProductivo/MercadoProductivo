@@ -15,13 +15,6 @@
     "shopping",
     "productivity"
   ],
-  "related_applications": [
-    {
-      "platform": "webapp",
-      "url": "https://mercadoproductivo.org/manifest.webmanifest"
-    }
-  ],
-  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192.png",
