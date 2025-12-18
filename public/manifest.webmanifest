@@ -2,6 +2,7 @@
   "name": "Mercado Productivo",
   "short_name": "MP",
   "description": "Plataforma que conecta vendedores con compradores",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -9,7 +10,18 @@
   "theme_color": "#f06d04",
   "lang": "es",
   "orientation": "portrait-primary",
-  "categories": ["business", "shopping", "productivity"],
+  "categories": [
+    "business",
+    "shopping",
+    "productivity"
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://mercadoproductivo.org/manifest.webmanifest"
+    }
+  ],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -31,7 +43,13 @@
     }
   ],
   "shortcuts": [
-    { "name": "Dashboard", "url": "/dashboard" },
-    { "name": "Mensajes", "url": "/dashboard/messages" }
+    {
+      "name": "Dashboard",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Mensajes",
+      "url": "/dashboard/messages"
+    }
   ]
 }

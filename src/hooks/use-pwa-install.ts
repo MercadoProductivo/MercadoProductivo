@@ -19,6 +19,34 @@ function notifyAll() {
   });
 }
 
+/**
+ * Verifica si la PWA está realmente instalada usando getInstalledRelatedApps API.
+ * Esto evita falsos positivos de display-mode: standalone en Chrome Android.
+ */
+export async function checkIfReallyInstalled(): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+
+  // 1. Verificar con getInstalledRelatedApps (método más preciso para Android)
+  if ("getInstalledRelatedApps" in navigator) {
+    try {
+      const apps = await (navigator as any).getInstalledRelatedApps();
+      if (apps && apps.length > 0) {
+        return true;
+      }
+    } catch {
+      // API no disponible o error, continuar con fallback
+    }
+  }
+
+  // 2. Solo considerar instalada si ESTAMOS CORRIENDO en modo standalone
+  //    (el usuario abrió desde el icono de la app instalada)
+  const isRunningStandalone =
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+    (navigator as any).standalone === true;
+
+  return isRunningStandalone;
+}
+
 export function usePWAInstall() {
   const deferredRef = useRef<BeforeInstallPromptEvent | null>(null);
   const [canInstall, setCanInstall] = useState(false);
@@ -46,10 +74,10 @@ export function usePWAInstall() {
     isStandaloneGlobal = modeStandalone();
     setIsStandalone(isStandaloneGlobal);
 
-    // Tomar evento capturado tempranamente
+    // Tomar evento capturado tempranamente (por Script beforeInteractive)
     try {
       const w = window as any;
-      if (w.__mpDefer && !deferredPromptGlobal) {
+      if (w.__mpDefer) {
         deferredPromptGlobal = w.__mpDefer as BeforeInstallPromptEvent;
         canInstallGlobal = true;
         notifyAll();
@@ -74,17 +102,18 @@ export function usePWAInstall() {
 
       window.addEventListener('beforeinstallprompt', onBefore as any);
       window.addEventListener('appinstalled', onInstalled);
-
-      // Evento personalizado desde layout.tsx
-      window.addEventListener('mp:bip-ready', (() => {
-        const w = window as any;
-        if (w.__mpDefer) {
-          deferredPromptGlobal = w.__mpDefer;
-          canInstallGlobal = true;
-          notifyAll();
-        }
-      }) as any);
-
+      // Listener al evento personalizado emitido por el Script temprano
+      const onBipReady = () => {
+        try {
+          const w = window as any;
+          if (w.__mpDefer) {
+            deferredPromptGlobal = w.__mpDefer as BeforeInstallPromptEvent;
+            canInstallGlobal = true;
+            notifyAll();
+          }
+        } catch { }
+      };
+      window.addEventListener('mp:bip-ready', onBipReady as any);
       listenersAttached = true;
     }
 
@@ -96,7 +125,7 @@ export function usePWAInstall() {
     };
     subscribers.add(sub);
 
-    // Estado inicial sincronizado
+    // Estado inicial desde lo global por si otro componente ya capturó el evento
     setCanInstall(canInstallGlobal);
     setIsStandalone(isStandaloneGlobal);
     deferredRef.current = deferredPromptGlobal;
@@ -108,39 +137,62 @@ export function usePWAInstall() {
 
   const install = async () => {
     let e = deferredPromptGlobal || deferredRef.current;
-
+    // Capturar último evento si fue almacenado por el Script temprano pero aún no sincronizado
     if (!e) {
-      // Intento final de recuperar del window
       try {
         const w = window as any;
         if (w.__mpDefer) {
-          e = w.__mpDefer;
+          e = w.__mpDefer as BeforeInstallPromptEvent;
           deferredPromptGlobal = e;
+          canInstallGlobal = true;
         }
       } catch { }
     }
-
-    if (e) {
-      try {
-        await e.prompt();
-        const res = await e.userChoice;
-        if (res?.outcome === 'accepted') {
-          canInstallGlobal = false;
-          deferredPromptGlobal = null;
-          isStandaloneGlobal = true;
-          notifyAll();
-        }
-        return res?.outcome;
-      } catch (err) {
-        console.error("[PWA] Install error:", err);
-        return 'error';
-      }
+    // Si todavía no hay evento, esperar brevemente por si el navegador lo emite justo después
+    if (!e) {
+      e = await new Promise<BeforeInstallPromptEvent | null>((resolve) => {
+        let resolved = false;
+        const onReady = () => {
+          if (resolved) return;
+          resolved = true;
+          try {
+            const w = window as any;
+            const ev = (deferredPromptGlobal || w.__mpDefer) as BeforeInstallPromptEvent | null;
+            resolve(ev || null);
+          } catch { resolve(deferredPromptGlobal || null); }
+        };
+        try { window.addEventListener('mp:bip-ready', onReady as any, { once: true } as any); } catch { }
+        // Timeout de cortesía
+        setTimeout(() => {
+          if (resolved) return;
+          resolved = true;
+          resolve(deferredPromptGlobal || null);
+        }, 2200);
+      });
     }
-
+    if (e) {
+      await e.prompt();
+      const res = await e.userChoice;
+      // El evento sólo permite un prompt; tras resolver, lo deshabilitamos en esta sesión
+      if (res?.outcome === 'dismissed') {
+        canInstallGlobal = false;
+        deferredPromptGlobal = null;
+        try { (window as any).__mpDefer = null; } catch { }
+        setCanInstall(false);
+      }
+      if (res?.outcome === 'accepted') {
+        // Limpiar también si se aceptó
+        canInstallGlobal = false;
+        deferredPromptGlobal = null;
+        try { (window as any).__mpDefer = null; } catch { }
+        setCanInstall(false);
+      }
+      return res?.outcome;
+    }
+    // iOS Safari no dispara beforeinstallprompt: retornar código para que la UI decida
     if (isIOS && !isStandalone) {
       return 'ios-instructions';
     }
-
     return 'unavailable';
   };
 

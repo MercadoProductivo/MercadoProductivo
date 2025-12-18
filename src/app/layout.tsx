@@ -84,25 +84,51 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 if (window.__mpBIPAttached) return; // evitar listeners duplicados
                 window.__mpBIPAttached = true;
                 window.__mpDefer = null;
+                console.log('[PWA] Listener beforeinstallprompt registrado');
                 window.addEventListener('beforeinstallprompt', function(e){
+                  console.log('[PWA] ¡Evento beforeinstallprompt recibido!', e);
                   try { e.preventDefault(); } catch(_){ }
                   try { window.__mpDefer = e; } catch(_){ }
                   try { window.dispatchEvent(new CustomEvent('mp:bip-ready')); } catch(_){ }
                 });
-              } catch {}
+              } catch(err){ console.error('[PWA] Error en BIP capture:', err); }
             })();
           `}
         </Script>
         {/* Registro del Service Worker lo antes posible */}
         <Script id="mp-sw-register" strategy="beforeInteractive">
           {`
-            (function(){
+            (async function(){
               try {
-                if (!('serviceWorker' in navigator)) return;
+                if (!('serviceWorker' in navigator)) {
+                  console.log('[SW Early] No soportado');
+                  return;
+                }
                 if (window.__mpSWRegistered) return;
                 window.__mpSWRegistered = true;
-                try { navigator.serviceWorker.register('/sw.js', { scope: '/' }); } catch {}
-              } catch {}
+                
+                console.log('[SW Early] Registrando SW...');
+                const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+                console.log('[SW Early] Registrado, scope:', reg.scope);
+                
+                // Si ya hay controller, perfecto
+                if (navigator.serviceWorker.controller) {
+                  console.log('[SW Early] Controller ya activo');
+                  return;
+                }
+                
+                // Esperar a que el SW tome control
+                await new Promise(function(resolve) {
+                  navigator.serviceWorker.addEventListener('controllerchange', function() {
+                    console.log('[SW Early] Controller activado');
+                    resolve();
+                  }, { once: true });
+                  // Timeout de 5s por si ya está activo
+                  setTimeout(resolve, 5000);
+                });
+              } catch(err) {
+                console.error('[SW Early] Error:', err);
+              }
             })();
           `}
         </Script>

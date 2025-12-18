@@ -25,8 +25,8 @@ self.addEventListener('install', (event) => {
       try {
         const cache = await caches.open(STATIC_CACHE);
         await cache.addAll(APP_SHELL);
-      } catch {}
-      try { await self.skipWaiting(); } catch {}
+      } catch { }
+      try { await self.skipWaiting(); } catch { }
     })()
   );
 });
@@ -41,10 +41,24 @@ self.addEventListener('activate', (event) => {
             .filter((k) => k.startsWith(CACHE_PREFIX) && k !== STATIC_CACHE)
             .map((k) => caches.delete(k))
         );
-      } catch {}
-      try { await self.clients.claim(); } catch {}
+      } catch { }
+      // Tomar control de todos los clientes inmediatamente
+      try { await self.clients.claim(); } catch { }
+      console.log('[SW] Activado y controlando clientes');
     })()
   );
+});
+
+// Escuchar mensajes para forzar activación
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    console.log('[SW] Recibido SKIP_WAITING');
+    self.skipWaiting();
+  }
+  if (event.data?.type === 'CLAIM_CLIENTS') {
+    console.log('[SW] Recibido CLAIM_CLIENTS');
+    self.clients.claim();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
@@ -81,7 +95,7 @@ self.addEventListener('fetch', (event) => {
         const cached = await cache.match(request);
         try {
           const res = await fetch(request);
-          try { cache.put(request, res.clone()); } catch {}
+          try { cache.put(request, res.clone()); } catch { }
           return res;
         } catch {
           // Siempre devolver un Response válido
