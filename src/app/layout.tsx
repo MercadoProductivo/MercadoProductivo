@@ -4,14 +4,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { Inter } from "next/font/google";
-import Script from "next/script";
 import { ThemeProvider } from "@/components/theme-provider";
 import AppShell from "@/components/layout/app-shell";
 import GlobalMobileMenu from "@/components/layout/global-mobile-menu";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 import NotificationsProvider from "@/providers/notifications-provider";
-import SWRegister from "@/components/pwa/sw-register";
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +17,12 @@ export const metadata: Metadata = {
     template: "%s | Mercado Productivo"
   },
   description: "Plataforma que conecta vendedores con compradores",
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Mercado Productivo",
+  },
   icons: {
     icon: [
       { url: "/mp-logo.svg?v=20251026", type: "image/svg+xml" },
@@ -29,15 +32,9 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/mp-logo.svg?v=20251026", type: "image/svg+xml" },
       { url: "/icons/icon-192.png", sizes: "192x192" },
     ],
     shortcut: "/mp-logo.svg?v=20251026",
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Mercado Productivo",
   },
   openGraph: {
     type: "website",
@@ -75,67 +72,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="es" suppressHydrationWarning>
       <body className={`antialiased ${inter.className} w-full bg-background text-foreground`}>
         <SpeedInsights />
-        {/* Captura temprana del evento beforeinstallprompt ANTES de la hidratación de React */}
-        <Script id="mp-bip-capture" strategy="beforeInteractive">
-          {`
-            (function(){
-              try {
-                if (typeof window === 'undefined') return;
-                if (window.__mpBIPAttached) return; // evitar listeners duplicados
-                window.__mpBIPAttached = true;
-                window.__mpDefer = null;
-                console.log('[PWA] Listener beforeinstallprompt registrado');
-                window.addEventListener('beforeinstallprompt', function(e){
-                  console.log('[PWA] ¡Evento beforeinstallprompt recibido!', e);
-                  try { e.preventDefault(); } catch(_){ }
-                  try { window.__mpDefer = e; } catch(_){ }
-                  try { window.dispatchEvent(new CustomEvent('mp:bip-ready')); } catch(_){ }
-                });
-              } catch(err){ console.error('[PWA] Error en BIP capture:', err); }
-            })();
-          `}
-        </Script>
-        {/* Registro del Service Worker lo antes posible */}
-        <Script id="mp-sw-register" strategy="beforeInteractive">
-          {`
-            (async function(){
-              try {
-                if (!('serviceWorker' in navigator)) {
-                  console.log('[SW Early] No soportado');
-                  return;
-                }
-                if (window.__mpSWRegistered) return;
-                window.__mpSWRegistered = true;
-                
-                console.log('[SW Early] Registrando SW...');
-                const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-                console.log('[SW Early] Registrado, scope:', reg.scope);
-                
-                // Si ya hay controller, perfecto
-                if (navigator.serviceWorker.controller) {
-                  console.log('[SW Early] Controller ya activo');
-                  return;
-                }
-                
-                // Esperar a que el SW tome control
-                await new Promise(function(resolve) {
-                  navigator.serviceWorker.addEventListener('controllerchange', function() {
-                    console.log('[SW Early] Controller activado');
-                    resolve();
-                  }, { once: true });
-                  // Timeout de 5s por si ya está activo
-                  setTimeout(resolve, 5000);
-                });
-              } catch(err) {
-                console.error('[SW Early] Error:', err);
-              }
-            })();
-          `}
-        </Script>
         <ThemeProvider>
           <NotificationsProvider>
-            {/* Registro SW de respaldo en cliente (por si el Script temprano no corre en prod) */}
-            <SWRegister />
             <AppShell>
               {children}
               <GlobalMobileMenu initialIsSeller={initialIsSeller} />
@@ -154,4 +92,3 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     </html>
   );
 }
-

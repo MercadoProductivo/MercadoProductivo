@@ -1,107 +1,81 @@
 /*
-  Service Worker PWA básico para Mercado Productivo
-  Estrategias:
-  - Navegaciones (HTML): network-first con timeout -> offline.html
-  - Assets estáticos (css, js, imágenes, fuentes): stale-while-revalidate
-*/
+ * Service Worker para Mercado Productivo
+ * Estrategia: Network-First para navegación, Cache-First para assets
+ */
 
-const CACHE_PREFIX = 'mp-pwa-v3';
-const STATIC_CACHE = CACHE_PREFIX + '-static';
+const CACHE_NAME = 'mp-cache-v1';
+const OFFLINE_URL = '/offline.html';
 
-const APP_SHELL = [
-  '/',
-  '/offline.html',
+// Assets a pre-cachear durante instalación
+const PRECACHE_ASSETS = [
+    '/',
+    '/offline.html',
+    '/icons/icon-192.png',
+    '/icons/icon-512.png'
 ];
 
-function fetchWithTimeout(req, ms) {
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), ms);
-  return fetch(req, { signal: controller.signal }).finally(() => clearTimeout(t));
-}
-
+// Instalación: pre-cachear recursos esenciales
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    (async () => {
-      try {
-        const cache = await caches.open(STATIC_CACHE);
-        await cache.addAll(APP_SHELL);
-      } catch { }
-      try { await self.skipWaiting(); } catch { }
-    })()
-  );
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => cache.addAll(PRECACHE_ASSETS))
+            .then(() => self.skipWaiting())
+    );
 });
 
+// Activación: limpiar caches antiguos
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    (async () => {
-      try {
-        const keys = await caches.keys();
-        await Promise.all(
-          keys
-            .filter((k) => k.startsWith(CACHE_PREFIX) && k !== STATIC_CACHE)
-            .map((k) => caches.delete(k))
-        );
-      } catch { }
-      // Tomar control de todos los clientes inmediatamente
-      try { await self.clients.claim(); } catch { }
-      console.log('[SW] Activado y controlando clientes');
-    })()
-  );
+    event.waitUntil(
+        caches.keys()
+            .then((keys) => Promise.all(
+                keys
+                    .filter((key) => key !== CACHE_NAME)
+                    .map((key) => caches.delete(key))
+            ))
+            .then(() => self.clients.claim())
+    );
 });
 
-// Escuchar mensajes para forzar activación
-self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') {
-    console.log('[SW] Recibido SKIP_WAITING');
-    self.skipWaiting();
-  }
-  if (event.data?.type === 'CLAIM_CLIENTS') {
-    console.log('[SW] Recibido CLAIM_CLIENTS');
-    self.clients.claim();
-  }
-});
-
+// Fetch: manejar requests según tipo
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
+    const { request } = event;
 
-  // Navegaciones: preferir red, con timeout -> offline
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      (async () => {
-        try {
-          const res = await fetchWithTimeout(request, 6000);
-          return res;
-        } catch {
-          const cache = await caches.open(STATIC_CACHE);
-          const cached = await cache.match('/offline.html');
-          return cached || new Response('Sin conexión', { status: 503, headers: { 'Content-Type': 'text/plain' } });
-        }
-      })()
-    );
-    return;
-  }
+    // Solo manejar GET requests
+    if (request.method !== 'GET') return;
 
-  // Assets: stale-while-revalidate
-  const accept = request.headers.get('accept') || '';
-  const isAsset = /\b(text\/css|application\/javascript|font\/|image\/)\b/.test(accept);
-  if (isAsset) {
+    // Ignorar requests a APIs externas y de desarrollo
     const url = new URL(request.url);
-    // Evitar interceptar assets cross-origin para no romper con errores de red
     if (url.origin !== self.location.origin) return;
-    event.respondWith(
-      (async () => {
-        const cache = await caches.open(STATIC_CACHE);
-        const cached = await cache.match(request);
-        try {
-          const res = await fetch(request);
-          try { cache.put(request, res.clone()); } catch { }
-          return res;
-        } catch {
-          // Siempre devolver un Response válido
-          return cached || new Response('', { status: 504 });
-        }
-      })()
-    );
-  }
+    if (url.pathname.startsWith('/api/')) return;
+    if (url.pathname.startsWith('/_next/webpack-hmr')) return;
+
+    // Navegación (HTML): Network-First con fallback a offline
+    if (request.mode === 'navigate') {
+        event.respondWith(
+            fetch(request)
+                .catch(() => caches.match(OFFLINE_URL))
+        );
+        return;
+    }
+
+    // Assets estáticos: Cache-First, luego network
+    if (request.destination === 'style' ||
+        request.destination === 'script' ||
+        request.destination === 'image' ||
+        request.destination === 'font') {
+        event.respondWith(
+            caches.match(request)
+                .then((cached) => {
+                    if (cached) return cached;
+                    return fetch(request).then((response) => {
+                        // Solo cachear respuestas válidas
+                        if (response.status === 200) {
+                            const clone = response.clone();
+                            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                        }
+                        return response;
+                    });
+                })
+        );
+    }
 });

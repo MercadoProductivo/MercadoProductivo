@@ -1,92 +1,66 @@
 "use client";
 
-import React from "react";
+import { Download, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { usePWA } from "@/hooks/use-pwa";
 import { cn } from "@/lib/utils";
-import { usePWAInstall, checkIfReallyInstalled } from "@/hooks/use-pwa-install";
-import { toast } from "sonner";
+import { useState } from "react";
 
-type Props = {
-  className?: string;
-  fullWidth?: boolean;
-  size?: "sm" | "default" | "lg";
-  variant?: "default" | "secondary" | "outline" | "ghost";
-  label?: string;
-};
+interface PWAInstallButtonProps {
+    className?: string;
+    variant?: "default" | "outline" | "ghost";
+    size?: "sm" | "default" | "lg";
+    showLabel?: boolean;
+}
 
-export default function PWAInstallButton({ className, fullWidth, size = "sm", variant = "outline", label = "Instalar app" }: Props) {
-  const { canInstall, isIOS, isStandalone, install } = usePWAInstall();
+export function PWAInstallButton({
+    className,
+    variant = "outline",
+    size = "sm",
+    showLabel = true,
+}: PWAInstallButtonProps) {
+    const { canInstall, isInstalling, isInstalled, install } = usePWA();
+    const [justInstalled, setJustInstalled] = useState(false);
 
-  // Mostramos siempre el botón. Si ya está instalada, al hacer click mostramos un toast informativo.
+    // No mostrar si ya está instalada o no disponible
+    if (isInstalled || (!canInstall && !isInstalling && !justInstalled)) {
+        return null;
+    }
 
-  const handleClick = async () => {
-    // === DIAGNÓSTICO PWA VISUAL ===
-    const diagInfo = {
-      canInstall,
-      isIOS,
-      isStandalone,
-      hasDeferred: !!(window as any).__mpDefer,
-      swController: !!navigator.serviceWorker?.controller,
-      displayMode: window.matchMedia?.('(display-mode: standalone)')?.matches,
+    const handleClick = async () => {
+        const result = await install();
+        if (result === "accepted") {
+            setJustInstalled(true);
+            setTimeout(() => setJustInstalled(false), 3000);
+        }
     };
 
-    // Mostrar diagnóstico como toast visible
-    toast.info(`🔍 SW: ${diagInfo.swController ? '✅' : '❌'} | Evento: ${diagInfo.hasDeferred ? '✅' : '❌'} | canInstall: ${diagInfo.canInstall ? '✅' : '❌'}`, { duration: 8000 });
-
-    console.log('[PWA Install] Diagnóstico:', diagInfo);
-
-    // Usar checkIfReallyInstalled para evitar falsos positivos en Chrome Android
-    const isReallyInstalled = await checkIfReallyInstalled();
-    console.log('[PWA Install] isReallyInstalled:', isReallyInstalled);
-
-    if (isReallyInstalled) {
-      toast.error("La app ya está instalada en este dispositivo.");
-      return;
-    }
-
-    // En iOS no mostramos modal ni toast: no hay beforeinstallprompt programable.
-    if (isIOS) {
-      toast.info("Para instalar en iOS: toca el botón Compartir y luego 'Añadir a pantalla de inicio'");
-      return;
-    }
-
-    if (canInstall) {
-      const result = await install();
-      console.log('[PWA Install] Resultado install():', result);
-    } else {
-      // Intentar obtener el evento diferido directamente
-      const hasDeferred = !!(window as any).__mpDefer;
-      console.log('[PWA Install] canInstall=false, hasDeferred:', hasDeferred);
-
-      if (hasDeferred) {
-        // El evento existe pero no se sincronizó - intentar instalar de todos modos
-        const result = await install();
-        console.log('[PWA Install] Resultado install() con deferred manual:', result);
-        return;
-      }
-
-      // Fallback: si el SW aún no controla la página en producción, pedir recargar
-      const needsReload = typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !navigator.serviceWorker.controller;
-      if (needsReload) {
-        toast.error("La instalación estará disponible tras recargar la página.");
-      } else {
-        // Mostrar info de diagnóstico al usuario para debugging
-        toast.error(`Instalación no disponible. SW: ${diagInfo.swController ? 'OK' : 'No'}, Evento: ${diagInfo.hasDeferred ? 'OK' : 'No'}`);
-      }
-    }
-  };
-
-  return (
-    <>
-      <Button
-        size={size}
-        variant={variant}
-        onClick={() => { void handleClick(); }}
-        className={cn(fullWidth ? "w-full justify-center" : "", className)}
-      >
-        <Download className="h-4 w-4 mr-2" /> {label}
-      </Button>
-    </>
-  );
+    return (
+        <Button
+            variant={variant}
+            size={size}
+            onClick={handleClick}
+            disabled={isInstalling}
+            className={cn(
+                "gap-2 transition-all",
+                justInstalled && "bg-green-500 text-white hover:bg-green-600",
+                className
+            )}
+        >
+            {isInstalling ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+            ) : justInstalled ? (
+                <Check className="h-4 w-4" />
+            ) : (
+                <Download className="h-4 w-4" />
+            )}
+            {showLabel && (
+                <span className="hidden sm:inline">
+                    {isInstalling ? "Instalando..." : justInstalled ? "¡Instalada!" : "Instalar"}
+                </span>
+            )}
+        </Button>
+    );
 }
+
+export default PWAInstallButton;

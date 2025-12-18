@@ -17,7 +17,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/providers/notifications-provider";
 import { MAIN_NAV, getDashboardNav } from "@/config/navigation";
-import PWAInstallButton from "@/components/pwa/pwa-install-button";
+import { PWAInstallButton } from "@/components/pwa";
 
 // Navegación centralizada importada desde src/config/navigation.ts
 
@@ -182,9 +182,9 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
           </SheetHeader>
 
           <nav className="flex-1 overflow-y-auto flex flex-col gap-5 px-4 pb-4">
-            {/* Acción para instalar PWA */}
+            {/* Botón de instalación PWA */}
             <div className="px-2">
-              <PWAInstallButton fullWidth variant="outline" label="Instalar app" />
+              <PWAInstallButton variant="outline" size="default" className="w-full justify-center" />
             </div>
             {/* Navegación principal para todos los usuarios */}
             <div className="space-y-2">

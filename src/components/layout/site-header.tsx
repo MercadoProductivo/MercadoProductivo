@@ -17,8 +17,8 @@ import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 import { MenuActionButton } from "@/components/ui/menu-buttons";
 import { MAIN_NAV } from "@/config/navigation";
 import { useNotifications } from "@/providers/notifications-provider";
-import PWAInstallButton from "@/components/pwa/pwa-install-button";
 import { Logo } from "@/components/ui/logo";
+import { PWAInstallButton } from "@/components/pwa";
 
 export default function SiteHeader() {
   const [user, setUser] = useState<User | null>(null);
@@ -225,8 +225,8 @@ export default function SiteHeader() {
               </div>
             ) : user ? (
               <>
-                {/* Botón directo para instalar PWA (no se muestra si ya está instalada o no disponible) */}
-                <PWAInstallButton size="sm" variant="outline" />
+                {/* Botón de instalación PWA */}
+                <PWAInstallButton />
                 {/* Ícono de mensajes con badge rojo (con accesibilidad) */}
                 <Link href={messagesHref} aria-label="Mensajes">
                   <button
@@ -313,7 +313,8 @@ export default function SiteHeader() {
               </>
             ) : (
               <>
-                <PWAInstallButton size="sm" variant="outline" />
+                {/* Botón de instalación PWA */}
+                <PWAInstallButton />
                 <Link href="/auth/login" className="text-xs text-foreground/80 hover:text-foreground sm:text-sm">Iniciar sesión</Link>
                 <Link
                   href="/auth/register"
