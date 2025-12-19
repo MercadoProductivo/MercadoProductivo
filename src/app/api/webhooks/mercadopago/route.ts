@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createHmac, timingSafeEqual } from "crypto";
 import { getMPConfig, getMPHeaders } from "@/lib/mercadopago/config";
+import { logger } from "@/lib/logger";
+import { computeMonthlyPrice } from "@/lib/utils/pricing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,7 +27,9 @@ async function processPreapproval(preapprovalId: string) {
         kind: "preapproval_webhook_missing_token",
         payload: { preapproval_id: preapprovalId, error: String(error) },
       } as any);
-    } catch {}
+    } catch (insertErr) {
+      logger.error("[Webhook] Failed to log missing_token event", { preapprovalId, error: insertErr });
+    }
     return;
   }
 
@@ -65,7 +69,9 @@ async function processPreapproval(preapprovalId: string) {
           kind: "preapproval_webhook_fetch_failed",
           payload: { preapproval_id: preapprovalId, details: text || null },
         } as any);
-      } catch {}
+      } catch (insertErr) {
+        logger.error("[Webhook] Failed to log fetch_failed event", { preapprovalId, error: insertErr });
+      }
       return;
     }
 
@@ -111,7 +117,9 @@ async function processPreapproval(preapprovalId: string) {
           .from("profiles")
           .update({ mp_subscription_status: status })
           .eq("id", userId);
-      } catch {}
+      } catch (updateErr) {
+        logger.error("[Webhook] Failed to sync subscription status", { userId, id, status, error: updateErr });
+      }
     }
 
     // Manejar cancelación originada en MP: programar cambio a plan gratis al fin de ciclo
@@ -154,9 +162,13 @@ async function processPreapproval(preapprovalId: string) {
               kind: "subscription_cancelled_by_mp",
               payload: { preapproval_id: id, plan_pending_code: freeCode, effective_at: effectiveAt.toISOString() },
             } as any);
-          } catch {}
+          } catch (insertErr) {
+            logger.error("[Webhook] Failed to log cancellation event", { userId, id, error: insertErr });
+          }
         }
-      } catch {}
+      } catch (cancelErr) {
+        logger.error("[Webhook] Failed to process MP cancellation", { userId, id, error: cancelErr });
+      }
     }
 
     // Evitar sobrescribir el preapproval actual del usuario en downgrades.
@@ -216,7 +228,9 @@ async function processPreapproval(preapprovalId: string) {
                 updated: updProfile || null,
               },
             } as any);
-          } catch {}
+          } catch (logErr) {
+            logger.error("[Webhook] Failed to log profile_update_failed", { userId, id, error: logErr });
+          }
         } else {
           try {
             await admin.from("billing_events").insert({
@@ -228,7 +242,9 @@ async function processPreapproval(preapprovalId: string) {
                 mp_preapproval_id: updProfile.mp_preapproval_id,
               },
             } as any);
-          } catch {}
+          } catch (logErr) {
+            logger.error("[Webhook] Failed to log profile_update_ok", { userId, id, error: logErr });
+          }
         }
 
         // Cancelar preapproval anterior si existía y es distinto
@@ -254,7 +270,9 @@ async function processPreapproval(preapprovalId: string) {
                   reason: reason,
                 },
               } as any);
-          } catch {}
+          } catch (cancelErr) {
+            logger.error("[Webhook] Failed to cancel old preapproval", { userId, oldPreId, error: cancelErr });
+          }
         }
 
         try {
@@ -270,7 +288,7 @@ async function processPreapproval(preapprovalId: string) {
               reason: reason,
             },
           } as any);
-        } catch {}
+        } catch { }
       } else {
         // Downgrade: mantener scheduling (no aplicar inmediato). Sólo registramos evento.
         // Intentar pausar el nuevo preapproval para evitar cobros en paralelo
@@ -292,7 +310,7 @@ async function processPreapproval(preapprovalId: string) {
               reason: reason,
             },
           } as any);
-        } catch {}
+        } catch { }
         try {
           await admin.from("billing_events").insert({
             user_id: userId,
@@ -306,7 +324,7 @@ async function processPreapproval(preapprovalId: string) {
               reason: reason,
             },
           } as any);
-        } catch {}
+        } catch { }
       }
     }
 
@@ -316,7 +334,7 @@ async function processPreapproval(preapprovalId: string) {
         kind: "preapproval_webhook",
         payload: { preapproval_id: id, status, external_reference: externalRef, plan_code: planCode, interval: refInterval, amount, currency_id, frequency: freq, frequency_type: ftype, reason },
       } as any);
-    } catch {}
+    } catch { }
   } catch (e: any) {
     try {
       await createAdminClient().from("billing_events").insert({
@@ -324,7 +342,7 @@ async function processPreapproval(preapprovalId: string) {
         kind: "preapproval_webhook_exception",
         payload: { preapproval_id: preapprovalId, error: e?.message || String(e) },
       } as any);
-    } catch {}
+    } catch { }
   }
 }
 
@@ -341,7 +359,7 @@ async function processAuthorizedPayment(paymentId: string) {
         kind: "authorized_payment_webhook_missing_token",
         payload: { payment_id: paymentId, error: String(error) },
       } as any);
-    } catch {}
+    } catch { }
     return;
   }
 
@@ -360,7 +378,7 @@ async function processAuthorizedPayment(paymentId: string) {
           kind: "authorized_payment_fetch_failed",
           payload: { payment_id: paymentId, details: text || null },
         } as any);
-      } catch {}
+      } catch { }
       return;
     }
 
@@ -392,7 +410,7 @@ async function processAuthorizedPayment(paymentId: string) {
             raw: payment || null,
           },
         } as any);
-      } catch {}
+      } catch { }
       return;
     }
 
@@ -404,7 +422,7 @@ async function processAuthorizedPayment(paymentId: string) {
           kind: "authorized_payment_missing_preapproval",
           payload: { payment_id: paymentId, raw: payment || null },
         } as any);
-      } catch {}
+      } catch { }
       return;
     }
 
@@ -422,7 +440,7 @@ async function processAuthorizedPayment(paymentId: string) {
           kind: "authorized_payment_preapproval_fetch_failed",
           payload: { payment_id: paymentId, preapproval_id: preapprovalId, details: text || null },
         } as any);
-      } catch {}
+      } catch { }
       return;
     }
 
@@ -483,7 +501,7 @@ async function processAuthorizedPayment(paymentId: string) {
             kind: "credits_refilled_on_renewal",
             payload: { payment_id: paymentId, preapproval_id: preapprovalId, credited: credited ?? null },
           } as any);
-        } catch {}
+        } catch { }
         if (refillError) {
           try {
             await admin.from("billing_events").insert({
@@ -491,10 +509,10 @@ async function processAuthorizedPayment(paymentId: string) {
               kind: "credits_refill_error",
               payload: { payment_id: paymentId, preapproval_id: preapprovalId, error: (refillError as any)?.message || null },
             } as any);
-          } catch {}
+          } catch { }
         }
       }
-    } catch {}
+    } catch { }
 
     // 7) Registrar evento de renovación
     try {
@@ -512,7 +530,7 @@ async function processAuthorizedPayment(paymentId: string) {
           status_detail: statusDetail,
         },
       } as any);
-    } catch {}
+    } catch { }
   } catch (e: any) {
     try {
       await createAdminClient().from("billing_events").insert({
@@ -520,7 +538,7 @@ async function processAuthorizedPayment(paymentId: string) {
         kind: "authorized_payment_exception",
         payload: { payment_id: paymentId, error: e?.message || String(e) },
       } as any);
-    } catch {}
+    } catch { }
   }
 }
 
@@ -572,7 +590,7 @@ export async function POST(req: Request) {
               kind: "webhook_signature_bypassed_for_test",
               payload: { provided: sigHeader || null },
             } as any);
-          } catch {}
+          } catch { }
         } else {
           // En producción rechazamos; en otros entornos registramos y continuamos
           try {
@@ -581,7 +599,7 @@ export async function POST(req: Request) {
               kind: "webhook_signature_failed",
               payload: { provided: sigHeader || null },
             } as any);
-          } catch {}
+          } catch { }
           if (process.env.NODE_ENV === "production") {
             return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
           }
@@ -602,7 +620,7 @@ export async function POST(req: Request) {
       // Fallback: si no viene type, asumimos preapproval (comportamiento previo)
       await processPreapproval(id);
     }
-  } catch {}
+  } catch { }
   return NextResponse.json({ ok: true, id: id || null });
 }
 

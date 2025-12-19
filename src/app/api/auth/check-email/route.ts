@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
- 
+import { checkRateLimit } from "@/lib/rate-limit-kv";
+import { getClientIP } from "@/lib/security/security-logger";
+
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,6 +15,31 @@ const bodySchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting: máximo 10 verificaciones por minuto por IP (prevenir enumeración)
+    const clientIP = getClientIP(req) || "unknown";
+    const rateLimitResult = await checkRateLimit({
+      identifier: clientIP,
+      namespace: "api:auth:check-email",
+      maxRequests: 10,
+      windowSeconds: 60,
+    });
+
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: "RATE_LIMIT_EXCEEDED",
+          message: "Demasiadas solicitudes. Por favor intenta más tarde.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Cache-Control": "no-store",
+            "Retry-After": String(Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000)),
+          },
+        }
+      );
+    }
+
     const json = await req.json();
     const { email } = bodySchema.parse(json);
     const emailNormalized = email.trim();
@@ -50,7 +77,7 @@ export async function POST(req: Request) {
       : Array.isArray(payload)
         ? payload
         : (payload as any)?.user
-          ? [ (payload as any).user ]
+          ? [(payload as any).user]
           : [];
     const exists = list.some((u: any) => String(u?.email || '').toLowerCase().trim() === emailLower);
     return NextResponse.json(

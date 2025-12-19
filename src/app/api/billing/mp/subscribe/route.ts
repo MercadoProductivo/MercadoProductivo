@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getMPConfig, validatePayerEmail } from "@/lib/mercadopago/config";
 import { checkRateLimit } from "@/lib/rate-limit-kv";
 import { BillingService } from "@/lib/services/billing";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -192,7 +193,9 @@ export async function POST(req: Request) {
             kind: "free_plan_activated",
             payload: { plan_code: plan.code },
           } as any);
-        } catch { }
+        } catch (logErr) {
+          logger.error("[Subscribe] Failed to log free_plan_activated", { userId: user.id, planCode: plan.code, error: logErr });
+        }
         return NextResponse.json({ redirect_url: successUrl + "?free=1" });
       } else {
         // Con plan actual: programar cambio a fin de ciclo
@@ -219,8 +222,12 @@ export async function POST(req: Request) {
                 kind: "preapproval_cancelled",
                 payload: { preapproval_id: preId, reason: "downgrade_to_free" },
               } as any);
-            } catch { }
-          } catch { }
+            } catch (logErr) {
+              logger.error("[Subscribe] Failed to log preapproval_cancelled", { userId: user.id, preId, error: logErr });
+            }
+          } catch (cancelErr) {
+            logger.error("[Subscribe] Failed to cancel preapproval", { userId: user.id, error: cancelErr });
+          }
         }
         try {
           await admin.from("billing_events").insert({
@@ -324,7 +331,9 @@ export async function POST(req: Request) {
           amount: amountRounded,
         },
       } as any);
-    } catch { }
+    } catch (logErr) {
+      logger.error("[Subscribe] Failed to log preapproval_created", { userId: user.id, preapprovalId, error: logErr });
+    }
 
     if (!initPoint) {
       // Si no hay URL de redirección, llevar a success y que el webhook confirme
