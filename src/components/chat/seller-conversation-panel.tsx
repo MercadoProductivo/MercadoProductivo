@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import confirmModal from "@/components/ui/confirm-modal";
 import { MoreVertical, X } from "lucide-react";
+import { fetchWithTimeout } from "@/lib/fetch";
 
 export default function SellerConversationPanel({
   conversationId,
@@ -73,13 +74,6 @@ export default function SellerConversationPanel({
       return iso;
     }
   }, []);
-
-  function fetchWithTimeout(url: string, opts: RequestInit & { timeoutMs?: number } = {}): Promise<Response> {
-    const { timeoutMs = 10000, ...rest } = opts;
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
-    return fetch(url, { ...rest, signal: controller.signal }).finally(() => clearTimeout(t));
-  }
 
   // Cargar mensajes anteriores con ?before
   async function loadOlder() {

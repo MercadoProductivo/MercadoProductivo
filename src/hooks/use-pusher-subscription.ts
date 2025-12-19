@@ -71,8 +71,11 @@ export function usePusherSubscription(
             Object.keys(handlersRef.current).forEach((event) => {
                 channelRef.current?.unbind?.(event);
             });
-        } catch {
-            // Ignore unbind errors
+        } catch (e) {
+            // Log but don't throw - unbind errors are expected during cleanup
+            if (process.env.NODE_ENV === "development") {
+                console.debug("[usePusherSubscription] Unbind error (expected)", e);
+            }
         }
     }, []);
 
@@ -167,8 +170,11 @@ export function usePusherSubscription(
             unbindHandlers();
             try {
                 safeUnsubscribe(channel);
-            } catch {
-                // Ignore unsubscribe errors
+            } catch (e) {
+                // Log but don't throw - unsubscribe errors are expected during cleanup
+                if (process.env.NODE_ENV === "development") {
+                    console.debug("[usePusherSubscription] Unsubscribe error (expected)", e);
+                }
             }
             channelRef.current = null;
             setIsSubscribed(false);
