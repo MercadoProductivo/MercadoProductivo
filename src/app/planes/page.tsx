@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Check, X, Image as ImageIcon, Package as PackageIcon, Coins, Sparkles, Infinity as InfinityIcon, MessageCircle } from "lucide-react";
 import { SubscribeButton } from "@/components/billing/subscribe-button";
 
@@ -130,36 +130,51 @@ export default async function PlanesPage({ searchParams }: { searchParams?: { in
     ? freeCodes.has(userPlanCodeLower)
       ? "gratis"
       : plusCodes.has(userPlanCodeLower)
-      ? "plus"
-      : deluxeCodes.has(userPlanCodeLower)
-      ? "deluxe"
-      : "other"
+        ? "plus"
+        : deluxeCodes.has(userPlanCodeLower)
+          ? "deluxe"
+          : "other"
     : "";
 
-  // Consumir el endpoint interno que usa Service Role
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const baseUrl = host ? `${proto}://${host}` : "";
+  // Consumir directamente desde Supabase (evita HTTP loop que Cloudflare bloquea con 403 en SSR)
   let plans: PlanRow[] = [];
   let endpointError: string | null = null;
   try {
-    const res = await fetch(`${baseUrl}/api/public/plans`, { cache: "no-store" });
-    if (res.ok) {
-      const json = await res.json();
-      plans = Array.isArray(json?.plans) ? json.plans : [];
+    const adminSupabase = createAdminClient();
+    const columnsFull = "code, name, max_products, max_images_per_product, credits_monthly, can_feature, feature_cost, price_monthly_cents, price_yearly_cents, currency, price_monthly, price_yearly";
+    const { data, error } = await adminSupabase
+      .from("plans")
+      .select(columnsFull)
+      .order("code", { ascending: true });
+
+    if (error) {
+      // Fallback: intentar con columnas base
+      const columnsBase = "code, name, max_products, max_images_per_product, credits_monthly";
+      const { data: dataBase, error: errorBase } = await adminSupabase
+        .from("plans")
+        .select(columnsBase)
+        .order("code", { ascending: true });
+
+      if (!errorBase && Array.isArray(dataBase)) {
+        plans = dataBase.map((r: any) => ({
+          ...r,
+          can_feature: null,
+          feature_cost: null,
+          price_monthly_cents: null,
+          price_yearly_cents: null,
+          currency: null,
+          price_monthly: null,
+          price_yearly: null,
+        }));
+      } else {
+        endpointError = (errorBase || error)?.message || "No se pudieron cargar los planes";
+        console.error("Error fetching plans:", endpointError);
+      }
     } else {
-      let msg = `GET /api/public/plans status ${res.status}`;
-      try {
-        const errJson = await res.json();
-        if (errJson?.message) msg += ` - ${errJson.message}`;
-        if (errJson?.error) msg += ` (${errJson.error})`;
-      } catch {}
-      endpointError = msg;
-      console.error(msg);
+      plans = Array.isArray(data) ? data : [];
     }
   } catch (e: any) {
-    console.error("Error fetch /api/public/plans", e?.message || e);
+    console.error("Error fetch plans", e?.message || e);
     endpointError = e?.message || "Fallo de red";
   }
   // Intercambiar el orden de Deluxe y Gratis (si ambos existen)
@@ -175,7 +190,7 @@ export default async function PlanesPage({ searchParams }: { searchParams?: { in
         plans = copy;
       }
     }
-  } catch {}
+  } catch { }
   const interval = searchParams?.interval === "yearly" ? "yearly" : "monthly";
   return (
     <main className="mx-auto max-w-6xl p-4 space-y-6 sm:p-6 sm:space-y-8">
@@ -225,10 +240,10 @@ export default async function PlanesPage({ searchParams }: { searchParams?: { in
             (isFirst
               ? "bg-white text-black hover:bg-white/90 "
               : isSecond
-              ? "bg-white text-primary hover:bg-white/90 border-primary "
-              : isThird
-              ? "shadow-none hover:shadow-[0_0_24px_rgba(249,115,22,0.45)] transition-shadow "
-              : "bg-white text-black hover:bg-white/90 ");
+                ? "bg-white text-primary hover:bg-white/90 border-primary "
+                : isThird
+                  ? "shadow-none hover:shadow-[0_0_24px_rgba(249,115,22,0.45)] transition-shadow "
+                  : "bg-white text-black hover:bg-white/90 ");
           return (
             <Card
               key={p.code}
@@ -385,7 +400,7 @@ export default async function PlanesPage({ searchParams }: { searchParams?: { in
       <section className="mt-16 mx-auto max-w-6xl">
         <h2 className="text-2xl font-semibold">Nuestros Servicios</h2>
         <p className="mt-2 text-muted-foreground">Ofrecemos soluciones adaptadas a cada etapa de tu negocio.</p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
           {/* Servicio 1 */}
           <div className="border rounded-lg p-6 hover:shadow-md transition-shadow">
@@ -442,7 +457,7 @@ export default async function PlanesPage({ searchParams }: { searchParams?: { in
                 </tr>
               </thead>
               <tbody>
-              <tr className="border-t odd:bg-muted/30">
+                <tr className="border-t odd:bg-muted/30">
                   <td className="px-4 py-3 text-muted-foreground">Precio mensual</td>
                   {plans.map((p) => {
                     const { monthly, currency } = computePrice(p);

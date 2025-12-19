@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { headers } from "next/headers";
+import { createAdminClient } from "@/lib/supabase/admin";
 import PlanBadge from "@/components/badges/plan-badge";
 import CancelSubscriptionButton from "./cancel-button";
 
@@ -97,7 +98,7 @@ export default async function PlanPage({ searchParams }: Props) {
         headers: { cookie: h2.get("cookie") ?? "" },
         cache: "no-store",
       });
-    } catch {}
+    } catch { }
   }
 
   const planCode = (profile?.plan_code || "").toString();
@@ -182,19 +183,16 @@ export default async function PlanPage({ searchParams }: Props) {
   const isSeller = roleNormalized === "seller" || !!planCode || (productsCount ?? 0) > 0;
   const roleLabel = isSeller ? "Vendedor" : "Comprador";
 
-  // Cargar planes disponibles (para cambiar/contratar)
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const baseUrl = host ? `${proto}://${host}` : "";
+  // Cargar planes disponibles (usando Supabase admin directamente para evitar 403 en SSR)
   let plans: Array<{ code: string; name: string | null; price_monthly_cents?: number | null; price_monthly?: number | null; currency?: string | null } & Record<string, any>> = [];
   try {
-    const res = await fetch(`${baseUrl}/api/public/plans`, { cache: "no-store" });
-    if (res.ok) {
-      const json = await res.json();
-      plans = Array.isArray(json?.plans) ? json.plans : [];
-    }
-  } catch {}
+    const adminSupabase = createAdminClient();
+    const { data } = await adminSupabase
+      .from("plans")
+      .select("code, name, price_monthly_cents, price_monthly, currency")
+      .order("code", { ascending: true });
+    plans = Array.isArray(data) ? data : [];
+  } catch { }
 
   return (
     <div className="mx-auto max-w-4xl p-4 space-y-4 sm:p-6 sm:space-y-6">

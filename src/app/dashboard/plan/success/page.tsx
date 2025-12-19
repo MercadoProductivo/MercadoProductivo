@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -98,7 +99,7 @@ export default async function SuccessPage({ searchParams }: Props) {
         const json = await res.json().catch(() => null as any);
         if (json?.preapproval_id) preapprovalId = String(json.preapproval_id);
       }
-    } catch {}
+    } catch { }
   }
 
   // Disparar procesamiento del preapproval en nuestro backend (idempotente)
@@ -142,16 +143,16 @@ export default async function SuccessPage({ searchParams }: Props) {
     renewsAt = (profile as any)?.plan_renews_at ?? null;
   }
 
-  // Obtener lista de planes (para nombres y precios)
-  const baseUrl = getBaseUrl();
+  // Obtener lista de planes (usando Supabase admin directamente para evitar 403 en SSR)
   let plans: any[] = [];
   try {
-    const res = await fetch(`${baseUrl}/api/public/plans`, { cache: "no-store" });
-    if (res.ok) {
-      const json = await res.json();
-      plans = Array.isArray(json?.plans) ? json.plans : [];
-    }
-  } catch {}
+    const adminSupabase = createAdminClient();
+    const { data } = await adminSupabase
+      .from("plans")
+      .select("code, name, price_monthly_cents, price_monthly, price_yearly_cents, price_yearly, currency")
+      .order("code", { ascending: true });
+    plans = Array.isArray(data) ? data : [];
+  } catch { }
 
   const findPlan = (code?: string | null) => {
     if (!code) return null;
