@@ -262,35 +262,28 @@ export default function ProductForm({ missingLabels = [] }: ProductFormProps) {
 
       const values = productSchema.parse(raw);
 
-      // Verificación final de límite
-      const { count: countNow } = await supabase
-        .from('products')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('published', true);
-      if (typeof maxProducts === 'number' && (countNow ?? 0) >= maxProducts) {
-        throw new Error(`Límite alcanzado: tu plan permite hasta ${maxProducts} productos.`);
+      // Crear producto vía API (usa cliente Admin para evitar RLS)
+      const createResponse = await fetch("/api/products/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: values.title.trim(),
+          description: values.description.trim(),
+          category: values.category,
+          price: values.price,
+          quantity_value: values.quantity_value,
+          quantity_unit: values.quantity_unit,
+          location: `${values.city}, ${values.province}`,
+        }),
+      });
+
+      const createResult = await createResponse.json();
+
+      if (!createResponse.ok) {
+        throw new Error(createResult?.message || createResult?.error || "Error al crear el producto");
       }
 
-      const payload = {
-        user_id: user.id,
-        title: values.title.trim(),
-        description: values.description.trim(),
-        category: values.category,
-        price: values.price,
-        quantity_value: values.quantity_value,
-        quantity_unit: values.quantity_unit,
-        location: `${values.city}, ${values.province} `,
-        published: true,
-        created_at: new Date().toISOString(),
-      };
-
-      const { data: createdProduct, error: insertError } = await supabase
-        .from("products")
-        .insert(payload)
-        .select("id")
-        .single();
-      if (insertError) throw insertError;
+      const createdProduct = createResult.product;
 
       const imageUrls = await uploadImages(user.id);
 
