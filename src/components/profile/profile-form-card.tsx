@@ -1,9 +1,9 @@
 "use client";
 import { startTransition, useRef, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ProfileForm from "@/components/profile/profile-form";
 import { useRouter } from "next/navigation";
+import { Edit2, Save, X } from "lucide-react";
 
 export default function ProfileFormCard() {
   const router = useRouter();
@@ -21,23 +21,25 @@ export default function ProfileFormCard() {
   };
 
   return (
-    <Card id="profile-form-card" className="md:col-span-2 xl:col-span-3">
-      <CardHeader className="pb-3 flex flex-row items-start justify-between">
-        <div>
-          <CardTitle className="text-lg">Mi Perfil</CardTitle>
-          <CardDescription>Actualiza tu información personal</CardDescription>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between pt-2 pb-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Mi Perfil</h2>
+          <p className="text-sm text-muted-foreground">Gestiona tu identidad, información de contacto y preferencias de cuenta.</p>
         </div>
-        <div className="ml-auto inline-flex items-center gap-2">
+        <div className="flex items-center gap-3 self-start sm:self-center">
           {editing && (
             <Button
               size="sm"
               type="button"
-              variant="outline"
+              variant="ghost"
+              className="text-muted-foreground hover:text-slate-900"
               onClick={() => {
                 resetRef.current?.();
                 setEditing(false);
               }}
             >
+              <X className="mr-2 h-4 w-4" />
               Cancelar
             </Button>
           )}
@@ -45,13 +47,25 @@ export default function ProfileFormCard() {
             size="sm"
             onClick={handleClick}
             variant={editing ? "default" : "outline"}
-            className={`${!editing ? "bg-white text-[#f06d04] border border-[#f06d04] hover:bg-[#f06d04]/10" : ""}`}
+            className={`min-w-[140px] shadow-sm transition-all ${!editing
+                ? "bg-white text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:shadow-md"
+                : "bg-orange-600 hover:bg-orange-700 text-white hover:shadow-md"
+              }`}
           >
-            {editing ? "Guardar" : "Editar perfil"}
+            {editing ? (
+              <>
+                <Save className="mr-2 h-4 w-4" /> Guardar
+              </>
+            ) : (
+              <>
+                <Edit2 className="mr-2 h-4 w-4" /> Editar perfil
+              </>
+            )}
           </Button>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         <ProfileForm
           disabled={!editing}
           hideInternalSubmit
@@ -67,7 +81,7 @@ export default function ProfileFormCard() {
             startTransition(() => router.refresh());
           }}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

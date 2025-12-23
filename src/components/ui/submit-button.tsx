@@ -1,7 +1,8 @@
+"use client";
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Button, ButtonProps } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { LoaderPinwheelIcon, LoaderPinwheelIconHandle } from '@/components/animated-icons';
 import { cn } from '@/lib/utils';
 
 interface SubmitButtonProps extends ButtonProps {
@@ -22,7 +23,16 @@ export function SubmitButton({
     // If explicitly disabled by prop, respect it.
     // Otherwise, only disable while loading (to prevent double submit), 
     // but NEVER disable based on validation (handled by react-hook-form on click).
-    const isEnabled = !disabled && !isLoading;
+    const loaderRef = useRef<LoaderPinwheelIconHandle>(null);
+
+    // Start/stop animation based on loading state
+    useEffect(() => {
+        if (isLoading) {
+            loaderRef.current?.startAnimation();
+        } else {
+            loaderRef.current?.stopAnimation();
+        }
+    }, [isLoading]);
 
     return (
         <Button
@@ -33,7 +43,7 @@ export function SubmitButton({
         >
             {isLoading ? (
                 <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <LoaderPinwheelIcon ref={loaderRef} className="mr-2" size={16} />
                     {loadingText}
                 </>
             ) : (
@@ -42,3 +52,4 @@ export function SubmitButton({
         </Button>
     );
 }
+

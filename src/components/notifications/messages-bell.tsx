@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { BellIcon } from "@/components/animated-icons";
 import { useNotifications } from "@/providers/notifications-provider";
 import {
   DropdownMenu,
@@ -22,7 +22,7 @@ export default function MessagesBell() {
           aria-label="Notificaciones de mensajes"
           className="relative inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-muted focus:outline-none"
         >
-          <Bell className="h-5 w-5" />
+          <BellIcon size={20} />
           {unreadCount > 0 ? (
             <span className="absolute -right-0.5 -top-0.5 inline-flex h-2.5 w-2.5 items-center justify-center rounded-full bg-red-500" />
           ) : null}

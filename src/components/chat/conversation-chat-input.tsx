@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { enqueueConversationMessage } from "@/lib/chat/offline-queue";
+import EmojiPicker from "./emoji-picker";
 
 export type ChatV2Sent = {
   id: string;
@@ -34,7 +35,7 @@ export default function ConversationChatInput({
 
   // Mantener el foco al cambiar de conversación
   useEffect(() => {
-    try { inputRef.current?.focus(); } catch {}
+    try { inputRef.current?.focus(); } catch { }
   }, [conversationId]);
 
   function fetchWithTimeout(url: string, opts: RequestInit & { timeoutMs?: number } = {}): Promise<Response> {
@@ -56,7 +57,7 @@ export default function ConversationChatInput({
         body: JSON.stringify({ typing: Boolean(typing) }),
         timeoutMs: 6000,
       });
-    } catch {}
+    } catch { }
   }, [conversationId]);
 
   async function handleSend() {
@@ -69,7 +70,7 @@ export default function ConversationChatInput({
     const sentAt = new Date().toISOString();
     onSent?.({ id: tempId, message_id: conversationId, body: bodyToSend, created_at: sentAt });
     setValue("");
-    try { inputRef.current?.focus(); } catch {}
+    try { inputRef.current?.focus(); } catch { }
 
     try {
       const res = await fetchWithTimeout(`/api/chat/conversations/${conversationId}/messages`, {
@@ -88,7 +89,7 @@ export default function ConversationChatInput({
       // Restaurar el texto enviado solo si el usuario no ha empezado a escribir otra cosa
       if (!valueRef.current.trim()) {
         setValue(bodyToSend);
-        try { inputRef.current?.focus(); } catch {}
+        try { inputRef.current?.focus(); } catch { }
       }
       try {
         const offline = typeof navigator !== "undefined" && navigator && (navigator as any).onLine === false;
@@ -96,7 +97,7 @@ export default function ConversationChatInput({
           enqueueConversationMessage(conversationId, bodyToSend);
           toast.info("Mensaje en cola offline: se enviará automáticamente al reconectar.");
         }
-      } catch {}
+      } catch { }
     } finally {
       setSending(false);
     }
@@ -114,42 +115,52 @@ export default function ConversationChatInput({
     // Señalizar escribiendo con throttle
     void emitTyping(true);
     // Programar apagado si no hay actividad
-    try { if (typingTimerRef.current) clearTimeout(typingTimerRef.current); } catch {}
+    try { if (typingTimerRef.current) clearTimeout(typingTimerRef.current); } catch { }
     typingTimerRef.current = setTimeout(() => { void emitTyping(false, true); }, 3500);
   };
 
+  // Manejar inserción de emoji
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    setValue((prev) => prev + emoji);
+    try { inputRef.current?.focus(); } catch { }
+  }, []);
+
   useEffect(() => {
     return () => {
-      try { if (typingTimerRef.current) clearTimeout(typingTimerRef.current); } catch {}
+      try { if (typingTimerRef.current) clearTimeout(typingTimerRef.current); } catch { }
       // Best-effort: notificar que dejamos de escribir
-      try { void emitTyping(false, true); } catch {}
+      try { void emitTyping(false, true); } catch { }
     };
   }, [emitTyping]);
 
   return (
-    <div className="flex items-end gap-2">
-      <div className="flex flex-1 items-end gap-2">
+    <div className="flex items-end gap-3 p-2">
+      {/* Área de input */}
+      <div className="flex flex-1 items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm transition-all focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-100 dark:focus-within:ring-orange-900/30">
+        <EmojiPicker onEmojiSelect={handleEmojiSelect} disabled={sending} />
         <Textarea
           ref={inputRef}
           value={value}
           onChange={onChangeValue}
           onKeyDown={onKeyDown}
-          rows={2}
+          rows={1}
           placeholder="Escribe un mensaje..."
-          className="flex-1 resize-none"
+          className="flex-1 resize-none border-0 bg-transparent p-0 text-sm placeholder:text-slate-400 focus-visible:ring-0 min-h-[24px] max-h-[120px]"
         />
       </div>
+
+      {/* Botón de enviar */}
       <Button
         onMouseDown={(e) => e.preventDefault()}
         onClick={handleSend}
         disabled={value.trim().length < 1}
         aria-busy={sending}
+        className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 p-0 shadow-md transition-all hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
       >
-        <span className="inline-flex items-center gap-1">
-          <Send className="h-4 w-4" />
-          Enviar
-        </span>
+        <Send className={`h-4 w-4 text-white ${sending ? "animate-pulse" : ""}`} />
+        <span className="sr-only">Enviar</span>
       </Button>
     </div>
   );
 }
+

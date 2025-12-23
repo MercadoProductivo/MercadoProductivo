@@ -70,12 +70,12 @@ export default function ProfileCard({
       <CardContent className="p-5 h-full flex flex-col">
         {/* Header: Avatar + Nombre + Plan */}
         <div className="flex items-center gap-4 mb-3">
-          <Avatar className="h-14 w-14 ring-1 ring-orange-200">
+          <Avatar className="h-14 w-14 ring-1 ring-primary/20">
             <AvatarImage src={avatarUrl || undefined} alt={name} />
             <AvatarFallback>{initial}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <h3 className="font-semibold text-lg text-gray-900 truncate group-hover:text-orange-600 transition-colors">
+            <h3 className="font-semibold text-lg text-foreground truncate group-hover:text-primary transition-colors">
               {name}
             </h3>
             <div className="flex items-center gap-2 mt-1 text-sm">
@@ -89,7 +89,7 @@ export default function ProfileCard({
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4 text-amber-500" />
             <div>
-              <div className="text-sm font-medium text-gray-900">
+              <div className="text-sm font-medium text-foreground">
                 {(productsCount ?? 0)} {(productsCount ?? 0) === 1 ? "producto" : "productos"}
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function ProfileCard({
             <div className="flex items-center gap-2">
               <Heart className="h-4 w-4 text-rose-600" />
               <div>
-                <div className="text-sm font-medium text-gray-900">
+                <div className="text-sm font-medium text-foreground">
                   {likesCount ?? 0} {(likesCount ?? 0) === 1 ? "like" : "likes"}
                 </div>
               </div>
@@ -109,7 +109,7 @@ export default function ProfileCard({
           <div className="flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-sky-600" />
             <div>
-              <div className="text-sm font-medium text-gray-900">{formatDate(joinedAt)}</div>
+              <div className="text-sm font-medium text-foreground">{formatDate(joinedAt)}</div>
             </div>
           </div>
         </div>
@@ -117,7 +117,7 @@ export default function ProfileCard({
         {/* CTA */}
         <Link
           href={href}
-          className="mt-auto block text-center text-sm rounded-md py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-100"
+          className="mt-auto block text-center text-sm rounded-md py-2 bg-muted text-primary hover:bg-muted/80 transition-colors border border-border"
         >
           {ctaLabel}
         </Link>

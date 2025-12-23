@@ -357,11 +357,11 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
   if (products.length === 0) {
     return (
       <div className="text-center py-16">
-        <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+        <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-xl font-semibold text-foreground mb-2">
           No se encontraron productos
         </h3>
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           Intenta ajustar los filtros para encontrar lo que buscas
         </p>
         <Button variant="outline" onClick={() => window.location.reload()}>
@@ -388,7 +388,7 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
               {/* Badges */}
               <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
                 {variant !== "compact" && isProductFeatured(product) && (
-                  <Badge className="bg-orange-500 hover:bg-orange-600">
+                  <Badge className="bg-primary hover:bg-primary/90">
                     <Star className="h-3 w-3 mr-1" />
                     Destacado
                   </Badge>
@@ -404,20 +404,20 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                    className="h-8 w-8 p-0 bg-background/90 hover:bg-background"
                     onClick={() => toggleLike(product)}
                   >
                     <Heart
                       className={cn(
                         "h-4 w-4",
-                        liked.has(product.id) ? "fill-red-500 text-red-500" : "text-gray-600"
+                        liked.has(product.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"
                       )}
                     />
                   </Button>
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                    className="h-8 w-8 p-0 bg-background/90 hover:bg-background"
                     onClick={async () => {
                       try {
                         const url = `${window.location.origin}/products/${product.id}`;
@@ -441,13 +441,13 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
                       }
                     }}
                   >
-                    <Share2 className="h-4 w-4 text-gray-600" />
+                    <Share2 className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </div>
               )}
 
               {/* Imagen */}
-              <div className={cn("overflow-hidden bg-gray-100 flex items-center justify-center",
+              <div className={cn("overflow-hidden bg-muted/40 flex items-center justify-center",
                 variant === "compact" ? "aspect-square" : "aspect-[4/3]"
               )}>
                 {product.primaryImageUrl ? (
@@ -459,8 +459,8 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
                     className={cn("w-full h-full object-cover group-hover:scale-105 transition-transform duration-300")}
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                    <div className="text-center text-gray-400">
+                  <div className="w-full h-full bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center">
+                    <div className="text-center text-muted-foreground">
                       <Package className={cn("mx-auto mb-2",
                         variant === "compact" ? "h-8 w-8" : variant === "comfortable" ? "h-10 w-10" : "h-12 w-12"
                       )} />
@@ -478,7 +478,7 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
               "flex flex-col flex-1"
             )}>
               {/* Título */}
-              <h3 className={cn("font-semibold mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors",
+              <h3 className={cn("font-semibold mb-2 line-clamp-2 group-hover:text-primary transition-colors text-foreground",
                 variant === "compact" ? "text-base" : variant === "comfortable" ? "text-base" : "text-lg"
               )}>
                 {product.title}
@@ -488,13 +488,13 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
               <div className={cn("space-y-1",
                 variant === "compact" ? "mb-2" : variant === "comfortable" ? "mb-2" : "mb-3"
               )}>
-                <div className={cn("flex items-center text-gray-500",
+                <div className={cn("flex items-center text-muted-foreground",
                   variant === "compact" ? "text-xs" : variant === "comfortable" ? "text-sm" : "text-sm"
                 )}>
                   <User className="h-4 w-4 mr-1" />
                   <span className="truncate" data-testid={`product-card-seller-${product.id}`}>{getSellerName(product)}</span>
                 </div>
-                <div className={cn("flex items-center text-gray-500",
+                <div className={cn("flex items-center text-muted-foreground",
                   variant === "compact" ? "text-xs" : variant === "comfortable" ? "text-sm" : "text-sm"
                 )}>
                   <MapPin className="h-4 w-4 mr-1" />
@@ -507,13 +507,13 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
                 variant === "compact" ? "mb-3" : variant === "comfortable" ? "mb-3" : "mb-4"
               )}>
                 <div>
-                  <span className={cn("font-bold text-orange-600",
+                  <span className={cn("font-bold text-primary",
                     variant === "compact" ? "text-xl" : variant === "comfortable" ? "text-xl" : "text-2xl"
                   )}>
                     {formatPrice(product.price)}
                   </span>
                   {formatPrice(product.price) !== 'Consultar' && (
-                    <span className={cn("text-gray-500 ml-1",
+                    <span className={cn("text-muted-foreground ml-1",
                       variant === "compact" ? "text-xs" : variant === "comfortable" ? "text-sm" : "text-sm"
                     )}>
                       / {product.quantity_unit}
@@ -521,7 +521,7 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
                   )}
                 </div>
                 {variant !== "compact" && (
-                  <div className="text-sm text-gray-600 mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     {product.quantity_value} {product.quantity_unit} disp.
                   </div>
                 )}
@@ -529,7 +529,7 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
 
               {/* Fecha de publicación */}
               {variant !== "compact" && (
-                <div className="flex items-center text-xs text-gray-400 mb-4">
+                <div className="flex items-center text-xs text-muted-foreground mb-4">
                   <Clock className="h-3 w-3 mr-1" />
                   Publicado {formatDate(product.created_at)}
                 </div>
@@ -537,7 +537,7 @@ export default function ProductsGrid({ filters, onProductsCountChange, sellerId,
 
               {/* Botones de acción */}
               <div className="mt-auto flex gap-2">
-                <Button asChild className="flex-1 bg-orange-500 hover:bg-orange-600" size={variant === "compact" ? "sm" : variant === "comfortable" ? "default" : undefined}>
+                <Button asChild className="flex-1 bg-primary hover:bg-primary/90" size={variant === "compact" ? "sm" : variant === "comfortable" ? "default" : undefined}>
                   <Link href={`/products/${product.id}`}>
                     Ver Producto
                   </Link>

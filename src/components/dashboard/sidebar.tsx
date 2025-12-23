@@ -29,9 +29,9 @@ function SidebarNav({ onItemClick, isSeller }: { onItemClick?: () => void; isSel
   return (
     <div className="px-3 py-4 sm:px-4 sm:py-6">
       <div className="px-2 pb-3">
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Menú</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/70">Menú</p>
       </div>
-      <nav className="grid gap-1">
+      <nav className="space-y-1">
         {filtered.map(({ href, label, icon: Icon }) => {
           const active = href === "/dashboard" ? pathname === "/dashboard" : pathname?.startsWith(href);
           const showUnreadDot = href === "/dashboard/messages" && unreadCount > 0;
@@ -41,15 +41,28 @@ function SidebarNav({ onItemClick, isSeller }: { onItemClick?: () => void; isSel
               href={href}
               onClick={onItemClick}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                active ? "bg-muted text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                active
+                  ? "bg-orange-50 text-orange-700 shadow-sm"
+                  : "text-muted-foreground hover:bg-gray-100 hover:text-foreground"
               )}
             >
               <div className="relative">
-                <Icon size={16} className="shrink-0" />
-                {showUnreadDot && <span className="absolute -right-1 -top-1 inline-flex h-2 w-2 rounded-full bg-red-500" />}
+                <Icon
+                  size={18}
+                  className={cn(
+                    "shrink-0 transition-colors",
+                    active ? "text-orange-600" : "text-gray-400 group-hover:text-gray-600"
+                  )}
+                />
+                {showUnreadDot && (
+                  <span className="absolute -right-0.5 -top-0.5 inline-flex h-2 w-2 animate-pulse rounded-full bg-red-500 ring-2 ring-white" />
+                )}
               </div>
               <span>{label}</span>
+              {active && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-orange-500" />
+              )}
             </Link>
           );
         })}

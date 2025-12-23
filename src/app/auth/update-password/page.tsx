@@ -1,9 +1,7 @@
 "use client";
 import AuthCard from "@/components/auth/auth-card";
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
-import { Label } from "@/components/ui/label";
+import { FloatingLabelPasswordInput } from "@/components/ui/floating-label-password-input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -70,11 +68,11 @@ export default function Page() {
       title="Definir nueva contraseña"
       subtitle="Ingresa tu nueva contraseña para tu cuenta."
     >
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="password">Nueva contraseña</Label>
-          <PasswordInput
+      <form onSubmit={onSubmit} className="space-y-5">
+        <div className="space-y-1">
+          <FloatingLabelPasswordInput
             id="password"
+            label="Nueva contraseña"
             value={password}
             onChange={(e) => {
               const next = e.target.value;
@@ -88,13 +86,13 @@ export default function Page() {
             {...fieldAttrs()}
           />
           {(pwdTouched || submitted) && pwdError && (
-            <p className="text-sm text-destructive">{pwdError}</p>
+            <p className="text-xs text-destructive font-medium pl-1">{pwdError}</p>
           )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm">Repetir contraseña</Label>
-          <PasswordInput
+        <div className="space-y-1">
+          <FloatingLabelPasswordInput
             id="confirm"
+            label="Repetir contraseña"
             value={confirm}
             onChange={(e) => {
               const next = e.target.value;
@@ -106,10 +104,10 @@ export default function Page() {
             data-success={!confirmError && (confirmTouched || submitted) && confirm.trim().length > 0 || undefined}
           />
           {(confirmTouched || submitted) && confirmError && (
-            <p className="text-sm text-destructive">{confirmError}</p>
+            <p className="text-xs text-destructive font-medium pl-1">{confirmError}</p>
           )}
         </div>
-        <Button type="submit" disabled={loading} className="w-full">{loading ? "Guardando..." : "Guardar"}</Button>
+        <Button type="submit" disabled={loading} className="w-full">{loading ? "Guardando..." : "Guardar contraseña"}</Button>
       </form>
     </AuthCard>
   );

@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -64,12 +63,12 @@ export default function Page() {
       subtitle="Ingresa tu correo para enviarte un enlace de restablecimiento."
     >
       <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Correo electrónico</Label>
-          <Input
+        <div className="space-y-1">
+          <FloatingLabelInput
             id="email"
             type="email"
             autoComplete="email"
+            label="Correo electrónico"
             value={email}
             onChange={(e) => {
               const next = e.target.value;
@@ -78,11 +77,10 @@ export default function Page() {
               setEmailError(res.success ? null : (res.error.issues[0]?.message || "Correo inválido"));
             }}
             onBlur={() => setEmailTouched(true)}
-            placeholder="nombre@ejemplo.com"
             {...fieldAttrs()}
           />
           {(emailTouched || submitted) && emailError && (
-            <p className="text-sm text-destructive">{emailError}</p>
+            <p className="text-xs text-destructive font-medium pl-1">{emailError}</p>
           )}
         </div>
         <Button type="submit" disabled={loading} className="w-full">{loading ? "Enviando..." : "Enviar enlace"}</Button>

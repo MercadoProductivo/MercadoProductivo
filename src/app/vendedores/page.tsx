@@ -28,11 +28,11 @@ export default async function VendedoresPage({
   const res = await fetch(apiUrl, { cache: "no-store" });
   if (!res.ok) {
     return (
-      <div className="bg-white py-12 sm:py-16">
+      <div className="bg-background py-12 sm:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10 sm:mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Vendedores</h1>
-            <div className="w-24 h-1 bg-orange-500 mx-auto mb-4"></div>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Vendedores</h1>
+            <div className="w-24 h-1 bg-primary mx-auto mb-4"></div>
           </div>
           <EmptyState
             type="sellers"
@@ -61,13 +61,13 @@ export default async function VendedoresPage({
   const hasNext = page < totalPages;
 
   return (
-    <div className="bg-white py-12 sm:py-16">
+    <div className="bg-background py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-10 sm:mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">Vendedores</h1>
-          <div className="w-24 h-1 bg-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Conoce a los vendedores y empresas que ofrecen sus productos en el Marketplace.</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">Vendedores</h1>
+          <div className="w-24 h-1 bg-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Conoce a los vendedores y empresas que ofrecen sus productos en el Marketplace.</p>
         </div>
 
         {/* Estado vacío o Grid con vendedores */}
@@ -101,7 +101,7 @@ export default async function VendedoresPage({
             {/* Paginación (shadcn) */}
             {totalPages >= 1 && (
               <Pagination className="mt-16 sm:mt-20 lg:mt-24">
-                <PaginationContent className="bg-white border rounded-full p-1 shadow-sm">
+                <PaginationContent className="bg-card border rounded-full p-1 shadow-sm">
                   <PaginationItem>
                     <PaginationLink
                       href={hasPrev ? `/vendedores?page=${page - 1}` : "#"}
@@ -123,7 +123,7 @@ export default async function VendedoresPage({
                             href={`/vendedores?page=${p}`}
                             isActive={p === page}
                             size="icon"
-                            className={p === page ? "bg-orange-500 text-white hover:bg-orange-600 border-orange-500" : ""}
+                            className={p === page ? "bg-primary text-primary-foreground hover:bg-primary/90 border-primary" : ""}
                           >
                             {p}
                           </PaginationLink>

@@ -70,7 +70,7 @@ function useMediaQuery(query: string) {
         try {
           // @ts-ignore
           m.removeListener(onChange);
-        } catch {}
+        } catch { }
       };
     }
   }, [query]);
@@ -128,7 +128,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
         delete map[convId];
         localStorage.setItem(PENDING_KEY, JSON.stringify(map));
       }
-    } catch {}
+    } catch { }
   }, []);
 
   const visible = useMemo(() => itemsAll.filter((c) => !c.hidden_at), [itemsAll]);
@@ -218,7 +218,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
             const p = pendingMap?.[next.id];
             const pendingDelta = Math.max(0, Number(p?.delta) || 0);
             computedUnread = Math.max(computedUnread, pendingDelta);
-          } catch {}
+          } catch { }
           // Si esta conversación está abierta, forzar 0 localmente
           if (chatConversationId && String(chatConversationId) === String(next.id)) {
             computedUnread = 0;
@@ -248,11 +248,11 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
           return next;
         });
       }
-          // Cargar perfiles faltantes en lote
+      // Cargar perfiles faltantes en lote
       const missingProfiles = list
         .filter(c => c.counterparty_id && !profilesRef.current[c.counterparty_id])
         .map(c => c.counterparty_id as string);
-      
+
       if (missingProfiles.length > 0) {
         try {
           const batchSize = 5; // Procesar en lotes de 5 para evitar sobrecarga
@@ -261,7 +261,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
             const results = await Promise.all(
               batch.map(async (id) => {
                 try {
-                  const r = await fetch(`/api/public/sellers/${encodeURIComponent(id)}`, { 
+                  const r = await fetch(`/api/public/sellers/${encodeURIComponent(id)}`, {
                     cache: "force-cache",
                     next: { revalidate: 3600 } // Cachear perfiles por 1 hora
                   });
@@ -273,12 +273,12 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
                 }
               })
             );
-            
+
             const updates = results.reduce<Record<string, PublicProfile>>((acc, { id, profile }) => {
               if (profile) acc[id] = profile;
               return acc;
             }, {});
-            
+
             if (Object.keys(updates).length > 0) {
               setProfilesById(prev => ({ ...prev, ...updates }));
             }
@@ -290,11 +290,11 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
       // Fallback opcional: cargar nombres/avatares desde mensajes solo para conversaciones visibles
       // y solo si realmente faltan tanto el nombre como el avatar
       const visibleConversations = list.filter(c => !c.hidden_at);
-      const needFallback = visibleConversations.filter(c => 
-        !String(c.counterparty_name || '').trim() && 
+      const needFallback = visibleConversations.filter(c =>
+        !String(c.counterparty_name || '').trim() &&
         !String(c.counterparty_avatar_url || '').trim()
       );
-      
+
       if (needFallback.length > 0) {
         // Cargar solo las conversaciones visibles que necesitan datos
         const batchSize = 3; // Reducir el batch size para evitar sobrecarga
@@ -303,18 +303,18 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
           const results = await Promise.all(
             batch.map(async (c) => {
               try {
-                const r = await fetch(`/api/chat/conversations/${encodeURIComponent(c.id)}/messages?limit=1&order=desc`, { 
+                const r = await fetch(`/api/chat/conversations/${encodeURIComponent(c.id)}/messages?limit=1&order=desc`, {
                   cache: "force-cache",
                   next: { revalidate: 300 } // Cache por 5 minutos
                 });
                 if (!r.ok) return { cid: c.id };
-                
+
                 const jj = await r.json();
                 const messages = Array.isArray(jj?.messages) ? jj.messages : [];
                 const lastMessage = messages[0]; // Ya está ordenado por fecha descendente
-                
+
                 if (!lastMessage) return { cid: c.id };
-                
+
                 return {
                   cid: c.id,
                   name: String(lastMessage?.sender_name || '').trim() || undefined,
@@ -325,17 +325,17 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
               }
             })
           );
-          
+
           // Aplicar actualizaciones por batch
           const updates = results.reduce<Record<string, { name?: string | null; avatar?: string | null }>>((acc, { cid, name, avatar }) => {
             if (name || avatar) acc[cid] = { name: name || null, avatar: avatar || null };
             return acc;
           }, {});
-          
+
           if (Object.keys(updates).length > 0) {
             setFallbackByConvId(prev => ({ ...prev, ...updates }));
           }
-          
+
           // Pequeña pausa entre lotes para no saturar
           if (i + batchSize < needFallback.length) {
             await new Promise(resolve => setTimeout(resolve, 300));
@@ -349,7 +349,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
       // En la bandeja: usar valor EXACTO (no monótonico) para alinear el badge global
       try {
         setUnreadCount(unread);
-      } catch {}
+      } catch { }
     } catch (e: any) {
       toast.error(e?.message || "Error al cargar conversaciones");
     } finally {
@@ -369,12 +369,12 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
         if (storeUnread > localUnread) {
           refresh();
         }
-      } catch {}
+      } catch { }
     };
     // intentos a 450ms y 1100ms desde el montaje
     timers.push(setTimeout(tryResync, 450));
     timers.push(setTimeout(tryResync, 1100));
-    return () => { for (const t of timers) try { clearTimeout(t); } catch {} };
+    return () => { for (const t of timers) try { clearTimeout(t); } catch { } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -388,13 +388,13 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
         return updated;
       });
       // Limpiar pendientes locales para esta conversación
-      try { clearPending(conversationId); } catch {}
+      try { clearPending(conversationId); } catch { }
       try {
         const unread = updated
           .filter((c) => !c.hidden_at)
           .reduce((acc, it) => acc + (Number(it.unread_count || 0) || 0), 0);
         setUnreadCount(unread);
-      } catch {}
+      } catch { }
     },
     [setUnreadCount, clearPending]
   );
@@ -407,19 +407,19 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
     refresh();
     // Segundo refresh con pequeño delay para capturar contadores que llegan con retraso
     const t = setTimeout(() => {
-      try { refresh(); } catch {}
+      try { refresh(); } catch { }
     }, 380);
-    return () => { try { clearTimeout(t); } catch {} };
+    return () => { try { clearTimeout(t); } catch { } };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   // Refrescar al recuperar foco/visibilidad (entrar desde otra vista, cambiar de pestaña, etc.)
   useEffect(() => {
-    const onFocus = () => { try { refresh(); } catch {} };
+    const onFocus = () => { try { refresh(); } catch { } };
     const onVis = () => {
       try {
         if (document.visibilityState === "visible") refresh();
-      } catch {}
+      } catch { }
     };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
@@ -446,7 +446,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
       if (!parsed.success) {
         logger.warn("Payload inválido chat:conversation:updated", { error: parsed.error });
         // Fallback: refresh completo si el evento no es válido
-        try { refresh(); } catch {}
+        try { refresh(); } catch { }
         return;
       }
       const evt = parsed.data;
@@ -539,7 +539,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
         ch?.unbind?.("chat:conversation:hidden", onConvHidden);
         ch?.unbind?.("chat:conversation:restored", onConvRestored);
         ch?.unbind?.("chat:conversation:read", onRead);
-      } catch {}
+      } catch { }
       handlersBound = false;
     };
 
@@ -555,7 +555,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
       const backoff = Math.min(cap, Math.round(base * Math.pow(2, attempt)));
       const jitter = Math.floor(Math.random() * Math.min(1000, Math.max(250, Math.floor(backoff * 0.3))));
       const delay = backoff + jitter;
-      try { if (retryTimer) clearTimeout(retryTimer); } catch {}
+      try { if (retryTimer) clearTimeout(retryTimer); } catch { }
       retryTimer = setTimeout(trySubscribe, delay);
     };
 
@@ -574,9 +574,9 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
 
     return () => {
       disposed = true;
-      try { if (retryTimer) clearTimeout(retryTimer); } catch {}
-      try { unbindHandlers(); } catch {}
-      try { getPusherClient()?.unsubscribe(channelName); } catch {}
+      try { if (retryTimer) clearTimeout(retryTimer); } catch { }
+      try { unbindHandlers(); } catch { }
+      try { getPusherClient()?.unsubscribe(channelName); } catch { }
     };
   }, [userId, chatConversationId, refresh, onConversationRead, setUnreadCount]);
 
@@ -609,9 +609,9 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
     setChatName(name);
     setChatAvatar(avatar);
     // Abrir conversación: limpiar pendientes para que no se reproyecten en siguientes refresh
-    try { clearPending(c.id); } catch {}
+    try { clearPending(c.id); } catch { }
     // Optimista: marcar como leída para bajar el badge de inmediato
-    try { onConversationRead(c.id); } catch {}
+    try { onConversationRead(c.id); } catch { }
   }
 
   // Gesto de arrastre para cerrar el sheet en móvil (drag handle)
@@ -631,7 +631,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
       currentY = 0;
       el.style.willChange = "transform";
       el.style.transition = "none";
-      try { handle.setPointerCapture(e.pointerId); } catch {}
+      try { handle.setPointerCapture(e.pointerId); } catch { }
     };
     const onMove = (e: PointerEvent) => {
       if (!dragging) return;
@@ -662,7 +662,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
           el.style.willChange = "";
         }, 220);
       }
-      try { handle.releasePointerCapture(e.pointerId); } catch {}
+      try { handle.releasePointerCapture(e.pointerId); } catch { }
     };
 
     handle.addEventListener("pointerdown", onDown);
@@ -736,140 +736,173 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
     <div className="grid grid-cols-12 gap-4">
       <div className="col-span-12 md:col-span-5 lg:col-span-4 space-y-4">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-        <TabsList>
-          <TabsTrigger value="inbox">Bandeja</TabsTrigger>
-          <TabsTrigger value="hidden">Ocultas</TabsTrigger>
-        </TabsList>
+          <TabsList>
+            <TabsTrigger value="inbox">Bandeja</TabsTrigger>
+            <TabsTrigger value="hidden">Ocultas</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="inbox" className="space-y-4">
-          <div className="flex flex-1 items-center gap-2">
-            <Input
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setVisibleCount(BASE_CHUNK);
-                setHiddenCount(BASE_CHUNK);
-              }}
-              placeholder="Buscar por nombre o mensaje..."
-              className="max-w-md"
-            />
-          </div>
+          <TabsContent value="inbox" className="space-y-4">
+            <div className="flex flex-1 items-center gap-2">
+              <Input
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setVisibleCount(BASE_CHUNK);
+                  setHiddenCount(BASE_CHUNK);
+                }}
+                placeholder="Buscar por nombre o mensaje..."
+                className="max-w-md"
+              />
+            </div>
 
-          <div className="rounded-md border">
-            <ScrollArea className="h-[60vh]" viewportRef={inboxViewportRef}>
-              <div className="h-full">
-                {visibleSlice.length === 0 && (
-                  <div className="px-3 py-6 text-sm text-muted-foreground">No hay conversaciones.</div>
-                )}
-                {visibleSlice.map((c) => {
-                  const prof = c.counterparty_id ? profilesById[c.counterparty_id] : undefined;
-                  const baseName = nameFromProfileLocal(prof, c.counterparty_name || undefined);
-                  const name = baseName || fallbackByConvId[c.id]?.name || "";
-                  const avatar =
-                    normalizeAvatarUrl(prof?.avatar_url) ||
-                    normalizeAvatarUrl(c.counterparty_avatar_url) ||
-                    normalizeAvatarUrl(fallbackByConvId[c.id]?.avatar);
-                  const unread = Number(c.unread_count || 0) || 0;
-                  return (
-                    <div
-                      key={c.id}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-3 hover:bg-muted/40 border-b cursor-pointer",
-                        unread > 0 && "bg-emerald-50/60",
-                        chatConversationId === c.id && "bg-primary/5"
-                      )}
-                      onClick={() => openChat(c)}
-                    >
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={avatar} alt={name || "Usuario"} />
-                        <AvatarFallback>{initialFrom(name)}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="truncate font-medium">{name || "—"}</div>
-                        </div>
-                        <div className="truncate text-xs text-muted-foreground">{c.preview || "—"}</div>
-                      </div>
-                      {unread > 0 ? (
-                        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
-                          {unread}
-                        </span>
-                      ) : (
-                        <div className="w-5" />
-                      )}
-                    </div>
-                  );
-                })}
-                {/* Sentinel para cargar más */}
-                <div ref={inboxSentinelRef} className="h-4" />
-              </div>
-            </ScrollArea>
-          </div>
-        </TabsContent>
+            <div className="rounded-md border">
+              <ScrollArea className="h-[60vh]" viewportRef={inboxViewportRef}>
+                <div className="h-full">
+                  {visibleSlice.length === 0 && (
+                    <div className="px-3 py-6 text-sm text-muted-foreground">No hay conversaciones.</div>
+                  )}
+                  {visibleSlice.map((c) => {
+                    const prof = c.counterparty_id ? profilesById[c.counterparty_id] : undefined;
+                    const baseName = nameFromProfileLocal(prof, c.counterparty_name || undefined);
+                    const name = baseName || fallbackByConvId[c.id]?.name || "";
+                    const avatar =
+                      normalizeAvatarUrl(prof?.avatar_url) ||
+                      normalizeAvatarUrl(c.counterparty_avatar_url) ||
+                      normalizeAvatarUrl(fallbackByConvId[c.id]?.avatar);
+                    const unread = Number(c.unread_count || 0) || 0;
+                    const isActive = chatConversationId === c.id;
 
-        <TabsContent value="hidden" className="space-y-2">
-          <div className="flex items-center">
-            <div className="text-sm font-medium text-muted-foreground">Conversaciones ocultas</div>
-          </div>
-
-          <div className="rounded-md border">
-            <ScrollArea className="h-[60vh]" viewportRef={hiddenViewportRef}>
-              <div>
-                {hiddenSlice.length === 0 && (
-                  <div className="px-3 py-6 text-sm text-muted-foreground">No hay conversaciones ocultas.</div>
-                )}
-                {hiddenSlice.map((c) => {
-                  const prof = c.counterparty_id ? profilesById[c.counterparty_id] : undefined;
-                  const baseName = nameFromProfileLocal(prof, c.counterparty_name || undefined);
-                  const name = baseName || fallbackByConvId[c.id]?.name || "";
-                  const avatar =
-                    normalizeAvatarUrl(prof?.avatar_url) ||
-                    normalizeAvatarUrl(c.counterparty_avatar_url) ||
-                    normalizeAvatarUrl(fallbackByConvId[c.id]?.avatar);
-                  const unread = Number(c.unread_count || 0) || 0;
-                  return (
-                    <div
-                      key={`hidden-${c.id}`}
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-3 hover:bg-muted/40 border-b",
-                        unread > 0 && "bg-emerald-50/60"
-                      )}
-                    >
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={avatar} alt={name || "Usuario"} />
-                        <AvatarFallback>{initialFrom(name)}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className="truncate font-medium">{name || "—"}</div>
-                        </div>
-                        <div className="truncate text-xs text-muted-foreground">{c.preview || "—"}</div>
-                      </div>
-                      {unread > 0 && (
-                        <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
-                          {unread}
-                        </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          await restoreConversation(c.id);
-                        }}
+                    return (
+                      <div
+                        key={c.id}
+                        className={cn(
+                          "group flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all duration-200",
+                          "border-b border-slate-100 dark:border-slate-800",
+                          "hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-transparent dark:hover:from-orange-900/10",
+                          unread > 0 && "bg-orange-50/40 dark:bg-orange-900/10",
+                          isActive && "bg-gradient-to-r from-orange-100/60 to-orange-50/30 dark:from-orange-900/20 border-l-2 border-l-orange-500"
+                        )}
+                        onClick={() => openChat(c)}
                       >
-                        Restaurar
-                      </Button>
-                    </div>
-                  );
-                })}
-                <div ref={hiddenSentinelRef} className="h-4" />
-              </div>
-            </ScrollArea>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+                        {/* Avatar con indicador online */}
+                        <div className="relative shrink-0">
+                          <Avatar className={cn(
+                            "h-12 w-12 ring-2 transition-all duration-200",
+                            isActive ? "ring-orange-400" : "ring-white dark:ring-slate-800",
+                            "group-hover:ring-orange-200 dark:group-hover:ring-orange-800"
+                          )}>
+                            <AvatarImage src={avatar} alt={name || "Usuario"} />
+                            <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                              {initialFrom(name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {/* Indicador online (pequeño círculo verde) */}
+                          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900 bg-emerald-500" />
+                        </div>
+
+                        {/* Contenido */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className={cn(
+                              "truncate font-semibold text-sm",
+                              unread > 0 ? "text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"
+                            )}>
+                              {name || "—"}
+                            </div>
+                            {/* Hora */}
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">
+                              {c.last_created_at ? new Date(c.last_created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : ""}
+                            </span>
+                          </div>
+                          <div className={cn(
+                            "truncate text-sm mt-0.5",
+                            unread > 0
+                              ? "text-slate-600 dark:text-slate-300 font-medium"
+                              : "text-slate-500 dark:text-slate-400"
+                          )}>
+                            {c.preview || "—"}
+                          </div>
+                        </div>
+
+                        {/* Badge no leído */}
+                        {unread > 0 && (
+                          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-orange-600 px-2 text-[11px] font-bold text-white shadow-sm">
+                            {unread > 99 ? "99+" : unread}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {/* Sentinel para cargar más */}
+                  <div ref={inboxSentinelRef} className="h-4" />
+                </div>
+              </ScrollArea>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="hidden" className="space-y-2">
+            <div className="flex items-center">
+              <div className="text-sm font-medium text-muted-foreground">Conversaciones ocultas</div>
+            </div>
+
+            <div className="rounded-md border">
+              <ScrollArea className="h-[60vh]" viewportRef={hiddenViewportRef}>
+                <div>
+                  {hiddenSlice.length === 0 && (
+                    <div className="px-3 py-6 text-sm text-muted-foreground">No hay conversaciones ocultas.</div>
+                  )}
+                  {hiddenSlice.map((c) => {
+                    const prof = c.counterparty_id ? profilesById[c.counterparty_id] : undefined;
+                    const baseName = nameFromProfileLocal(prof, c.counterparty_name || undefined);
+                    const name = baseName || fallbackByConvId[c.id]?.name || "";
+                    const avatar =
+                      normalizeAvatarUrl(prof?.avatar_url) ||
+                      normalizeAvatarUrl(c.counterparty_avatar_url) ||
+                      normalizeAvatarUrl(fallbackByConvId[c.id]?.avatar);
+                    const unread = Number(c.unread_count || 0) || 0;
+                    return (
+                      <div
+                        key={`hidden-${c.id}`}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-3 hover:bg-muted/40 border-b",
+                          unread > 0 && "bg-emerald-50/60"
+                        )}
+                      >
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={avatar} alt={name || "Usuario"} />
+                          <AvatarFallback>{initialFrom(name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <div className="truncate font-medium">{name || "—"}</div>
+                          </div>
+                          <div className="truncate text-xs text-muted-foreground">{c.preview || "—"}</div>
+                        </div>
+                        {unread > 0 && (
+                          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
+                            {unread}
+                          </span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await restoreConversation(c.id);
+                          }}
+                        >
+                          Restaurar
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  <div ref={hiddenSentinelRef} className="h-4" />
+                </div>
+              </ScrollArea>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {!isMobile && (
         <div className="col-span-12 md:col-span-7 lg:col-span-8">
@@ -886,7 +919,7 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
                     setChatConversationId(null);
                     setChatName(null);
                     setChatAvatar(null);
-                  } catch {}
+                  } catch { }
                 }}
               />
             ) : (

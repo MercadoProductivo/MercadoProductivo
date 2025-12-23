@@ -76,7 +76,7 @@ export default function SellerInfoCard({ seller, productTitle }: { seller: Publi
 
   return (
     <Card className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-indigo-50" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
       <CardContent className="relative pt-8 sm:pt-9 px-7 sm:px-8">
         <div className="flex items-start gap-4">
           <Avatar className="h-12 w-12">
@@ -85,7 +85,7 @@ export default function SellerInfoCard({ seller, productTitle }: { seller: Publi
           </Avatar>
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-3">
-              <div className="truncate font-semibold text-gray-900" data-testid="product-detail-seller-name">
+              <div className="truncate font-semibold text-foreground" data-testid="product-detail-seller-name">
                 {displayName}
               </div>
               <PlanBadge planCode={seller?.plan_code} planLabel={seller?.plan_label} className="py-0.5" />
@@ -117,22 +117,22 @@ export default function SellerInfoCard({ seller, productTitle }: { seller: Publi
             asChild
             variant="outline"
             size="sm"
-            className="w-full sm:w-auto border-amber-500 text-amber-600 hover:bg-amber-50"
+            className="w-full sm:w-auto border-amber-500 text-amber-600 hover:bg-amber-500/10"
           >
             <Link href={`/vendedores/${seller.id}`}>Ver perfil</Link>
           </Button>
         </div>
 
         {paid && (
-          <div className="mt-5 grid grid-cols-3 gap-3 rounded-md border border-gray-200 bg-white/70 p-3 text-sm">
+          <div className="mt-5 grid grid-cols-3 gap-3 rounded-md border border-border bg-card/70 p-3 text-sm">
             <div className="flex flex-col items-start">
-              <div className="inline-flex items-center gap-1 text-gray-500">
+              <div className="inline-flex items-center gap-1 text-muted-foreground">
                 <Package className="h-4 w-4" /> Productos
               </div>
               <div className="mt-0.5 text-base font-semibold tabular-nums">{seller?.products_count ?? 0}</div>
             </div>
             <div className="flex flex-col items-start">
-              <div className="inline-flex items-center gap-1 text-gray-500">Likes</div>
+              <div className="inline-flex items-center gap-1 text-muted-foreground">Likes</div>
               <div className="mt-0.5">
                 <SellerLikeButton
                   sellerId={seller.id}
@@ -143,7 +143,7 @@ export default function SellerInfoCard({ seller, productTitle }: { seller: Publi
               </div>
             </div>
             <div className="flex flex-col items-start">
-              <div className="inline-flex items-center gap-1 text-gray-500">
+              <div className="inline-flex items-center gap-1 text-muted-foreground">
                 <CalendarDays className="h-4 w-4" /> Miembro desde
               </div>
               <div className="mt-0.5 text-base font-semibold">{joinedLabel || "—"}</div>

@@ -27,9 +27,9 @@ export const MessageNewEventSchema = z.object({
   preview: z.string().optional(),
   created_at: z.string().optional(),
   sender_id: z.union([z.string(), z.number()]).optional(),
-  sender_name: z.string().optional(),
-  sender_email: z.string().optional(),
-  avatar_url: z.string().optional(),
+  sender_name: z.string().optional().nullable(),
+  sender_email: z.string().optional().nullable(),
+  avatar_url: z.string().optional().nullable(), // Acepta string | undefined | null
   owner_id: z.union([z.string(), z.number()]).optional(),
   user_id: z.union([z.string(), z.number()]).optional(),
   counterparty_id: z.union([z.string(), z.number()]).optional(),

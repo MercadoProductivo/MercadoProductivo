@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { UsageRadial, CountdownUntil } from "@/components/dashboard/kpi-charts";
 import PlanBadge from "@/components/badges/plan-badge";
+import DashboardHeaderBadges from "@/components/badges/dashboard-header-badges";
 import { getNormalizedRoleFromUser } from "@/lib/auth/role";
 import { normalizePlanCode, getPlanLabel } from "@/lib/plans";
 
@@ -88,10 +89,10 @@ export default async function Page() {
 
   const { data: plan } = planCode
     ? await supabase
-        .from("plans")
-        .select("code, name, max_products, max_services, credits_monthly")
-        .eq("code", planCode)
-        .single()
+      .from("plans")
+      .select("code, name, max_products, max_services, credits_monthly")
+      .eq("code", planCode)
+      .single()
     : ({ data: null } as const);
 
   // Mostrar preferentemente el nombre dinámico del plan desde la tabla `plans`
@@ -133,10 +134,10 @@ export default async function Page() {
   const planVisibleLimit = (isBasicPlan || freeCodes.has(planCodeLower))
     ? 1
     : (plusCodes.has(planCodeLower) || /plus|enterprise|premium|pro/.test(labelLower))
-    ? 15
-    : (deluxeCodes.has(planCodeLower) || /deluxe|diamond/.test(labelLower))
-    ? 30
-    : (maxProducts ?? null);
+      ? 15
+      : (deluxeCodes.has(planCodeLower) || /deluxe|diamond/.test(labelLower))
+        ? 30
+        : (maxProducts ?? null);
   const exceedsVisible = typeof productsCount === "number" && planVisibleLimit != null && productsCount > planVisibleLimit;
 
   // (Gráfico de actividad removido)
@@ -160,47 +161,45 @@ export default async function Page() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl p-4 space-y-4 sm:p-6 sm:space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Panel de control</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">Bienvenido, {firstName} 👋  </p>
+    <div className="mx-auto max-w-6xl p-4 space-y-6 sm:p-6 sm:space-y-8">
+      {/* Header mejorado */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8 shadow-xl animate-in fade-in-0 slide-in-from-top-4 duration-500">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500 rounded-full blur-3xl" />
+        </div>
+        <div className="relative flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="text-white">
+            <p className="text-sm text-slate-400 mb-1">
+              {new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+            </p>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Panel de Control</h1>
+            <p className="text-slate-300 mt-1">Bienvenido, {firstName} 👋</p>
+          </div>
+          <DashboardHeaderBadges
+            emailVerified={emailVerified}
+            planLabel={planLabel}
+            planCode={planCode}
+          />
         </div>
       </div>
 
       <section className="space-y-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Resumen</CardTitle>
-            <CardDescription>Estado de tu cuenta</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Email</span>
-              <span className="font-medium">{user.email}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Plan</span>
-              <span className="font-medium"><PlanBadge planLabel={planLabel} planCode={planCode} /></span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Verificación</span>
-              <Badge variant={emailVerified ? "default" : "secondary"}>
-                {emailVerified ? "Verificado" : "No verificado"}
-              </Badge>
-            </div>
-            {/* Enlace a detalles del plan removido */}
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Métricas de uso</CardTitle>
-            <CardDescription>Resumen del mes actual</CardDescription>
+        {/* Card Métricas */}
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-100">
+          <CardHeader className="pb-3 border-b bg-gradient-to-r from-slate-50 to-white">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-1 rounded-full bg-gradient-to-b from-violet-500 to-indigo-500" />
+              <div>
+                <CardTitle className="text-lg">Métricas de uso</CardTitle>
+                <CardDescription>Resumen del mes actual</CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="text-sm space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-              <div className="rounded-md border p-4">
+          <CardContent className="text-sm space-y-4 pt-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="rounded-xl border bg-gradient-to-br from-violet-50 to-white p-4 shadow-sm hover:shadow-md transition-shadow">
                 <UsageRadial
                   label="Productos"
                   value={productsCount ?? 0}
@@ -212,7 +211,7 @@ export default async function Page() {
                   showCenter={false}
                 />
               </div>
-              <div className="rounded-md border p-4">
+              <div className="rounded-xl border bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm hover:shadow-md transition-shadow">
                 <UsageRadial
                   label="Servicios"
                   value={servicesCount ?? 0}
@@ -224,17 +223,17 @@ export default async function Page() {
                   showCenter={false}
                 />
               </div>
-              <div className="rounded-md border p-4 flex items-center justify-center">
+              <div className="rounded-xl border bg-gradient-to-br from-amber-50 to-white p-4 flex items-center justify-center shadow-sm hover:shadow-md transition-shadow">
                 <div className="min-h-[148px] flex flex-col items-center justify-center text-center">
                   <div className="text-muted-foreground">Saldo de créditos</div>
-                  <div className="mt-1 text-3xl font-semibold">{creditsBalance}</div>
+                  <div className="mt-2 text-4xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">{creditsBalance}</div>
                   {!isBasicPlan && !!creditsMonthly && (
-                    <div className="text-xs text-muted-foreground">de {creditsMonthly} mensuales</div>
+                    <div className="text-xs text-muted-foreground mt-1">de {creditsMonthly} mensuales</div>
                   )}
                 </div>
               </div>
               {!isBasicPlan && activatedAt && expiresAt && (
-                <div className="rounded-md border p-4">
+                <div className="rounded-xl border bg-gradient-to-br from-emerald-50 to-white p-4 shadow-sm hover:shadow-md transition-shadow">
                   <CountdownUntil
                     label="Expira en"
                     startISO={activatedAt as any}
@@ -267,7 +266,7 @@ export default async function Page() {
           </CardContent>
         </Card>
 
-        
+
 
         {/* Tarjeta de "Información requerida para publicar" eliminada: ahora se maneja con modal y redirección a /dashboard/profile */}
 

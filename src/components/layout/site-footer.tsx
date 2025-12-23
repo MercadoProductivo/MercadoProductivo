@@ -1,39 +1,69 @@
+"use client";
+
 import Link from "next/link";
 
+/**
+ * SiteFooter - Footer principal del sitio.
+ * Versión estable sin dependencias problemáticas.
+ */
 export default function SiteFooter() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="border-t border-white/10 bg-sky-900 text-white pb-safe">
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <h4 className="text-sm font-semibold">Mercado Productivo</h4>
-            <p className="mt-2 text-sm text-white/80">
-              Conexiones B2B agroindustriales con foco en transparencia y contacto directo.
+    <footer className="w-full bg-slate-900 text-slate-300 border-t border-slate-800">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* Grid principal */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+
+          {/* Brand */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-orange-500">Mercado Productivo</h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Conectamos vendedores y compradores B2B agroindustriales con transparencia y eficiencia.
             </p>
           </div>
+
+          {/* Plataforma */}
           <div>
-            <h4 className="text-sm font-semibold">Enlaces útiles</h4>
-            <ul className="mt-2 space-y-2 text-sm text-white/80">
-              <li><Link href="/contacto" className="hover:text-white">Contacto</Link></li>
-              <li><Link href="/nosotros" className="hover:text-white">Nosotros</Link></li>
-             
+            <h3 className="text-sm font-semibold text-white mb-4">Plataforma</h3>
+            <ul className="space-y-2">
+              <li><Link href="/" className="text-sm text-slate-400 hover:text-white transition-colors">Inicio</Link></li>
+              <li><Link href="/" className="text-sm text-slate-400 hover:text-white transition-colors">Productos</Link></li>
+              <li><Link href="/vendedores" className="text-sm text-slate-400 hover:text-white transition-colors">Vendedores</Link></li>
+              <li><Link href="/planes" className="text-sm text-slate-400 hover:text-white transition-colors">Planes</Link></li>
             </ul>
           </div>
+
+          {/* Soporte */}
           <div>
-            <h4 className="text-sm font-semibold">Compañía</h4>
-            <ul className="mt-2 space-y-2 text-sm text-white/80">
-              <li><Link href="/" className="hover:text-white">Productos</Link></li>
-              <li><Link href="/planes" className="hover:text-white">Planes</Link></li>
+            <h3 className="text-sm font-semibold text-white mb-4">Soporte</h3>
+            <ul className="space-y-2">
+              <li><Link href="/contacto" className="text-sm text-slate-400 hover:text-white transition-colors">Contacto</Link></li>
+              <li><Link href="/faq" className="text-sm text-slate-400 hover:text-white transition-colors">FAQ</Link></li>
+              <li><Link href="/terminos" className="text-sm text-slate-400 hover:text-white transition-colors">Términos</Link></li>
+              <li><Link href="/privacidad" className="text-sm text-slate-400 hover:text-white transition-colors">Privacidad</Link></li>
+            </ul>
+          </div>
+
+          {/* Contacto */}
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-4">Contacto</h3>
+            <ul className="space-y-2">
+              <li className="text-sm text-slate-400">📍 Buenos Aires, Argentina</li>
+              <li>
+                <a href="mailto:info@mercadoproductivo.com" className="text-sm text-slate-400 hover:text-white transition-colors">
+                  ✉️ info@mercadoproductivo.com
+                </a>
+              </li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-white/70 sm:flex-row">
-          <p>© {new Date().getFullYear()} Mercado Productivo. Todos los derechos reservados.</p>
-          <div className="flex gap-4">
-            <Link href="/terminos" className="hover:text-white">Términos</Link>
-            <Link href="/privacidad" className="hover:text-white">Privacidad</Link>
-          </div>
+        {/* Copyright */}
+        <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+          <p className="text-xs text-slate-500">
+            © {currentYear} Mercado Productivo. Todos los derechos reservados.
+          </p>
         </div>
       </div>
     </footer>

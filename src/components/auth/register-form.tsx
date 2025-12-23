@@ -2,8 +2,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { RegisterInput, registerSchema } from "@/schemas/auth";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { FloatingLabelPasswordInput } from "@/components/ui/floating-label-password-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -161,55 +161,69 @@ export default function RegisterForm() {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
       {/* Nombre y Apellido */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="firstName">Nombre <span className="text-red-500">*</span></Label>
-          <Input id="firstName" autoComplete="given-name" placeholder="Tu nombre" {...form.register("firstName")} {...fieldAttrs("firstName")} />
-          <p role="alert" className={`min-h-[16px] text-sm ${form.formState.errors.firstName ? "text-red-500" : "opacity-0"}`}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-1">
+          <FloatingLabelInput
+            id="firstName"
+            autoComplete="given-name"
+            label="Nombre"
+            {...form.register("firstName")}
+            {...fieldAttrs("firstName")}
+          />
+          <p role="alert" className={`min-h-[16px] text-xs ${form.formState.errors.firstName ? "text-red-500 font-medium" : "opacity-0"}`}>
             {form.formState.errors.firstName?.message || "\u00A0"}
           </p>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName">Apellido <span className="text-red-500">*</span></Label>
-          <Input id="lastName" autoComplete="family-name" placeholder="Tu apellido" {...form.register("lastName")} {...fieldAttrs("lastName")} />
-          <p role="alert" className={`min-h-[16px] text-sm ${form.formState.errors.lastName ? "text-red-500" : "opacity-0"}`}>
+        <div className="space-y-1">
+          <FloatingLabelInput
+            id="lastName"
+            autoComplete="family-name"
+            label="Apellido"
+            {...form.register("lastName")}
+            {...fieldAttrs("lastName")}
+          />
+          <p role="alert" className={`min-h-[16px] text-xs ${form.formState.errors.lastName ? "text-red-500 font-medium" : "opacity-0"}`}>
             {form.formState.errors.lastName?.message || "\u00A0"}
           </p>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico <span className="text-red-500">*</span></Label>
-        <Input
+      <div className="space-y-1">
+        <FloatingLabelInput
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="nombre@ejemplo.com"
+          label="Correo electrónico"
           {...form.register("email")}
           {...fieldAttrs("email")}
         />
-        <p role="alert" className={`min-h-[16px] text-sm ${form.formState.errors.email ? "text-red-400" : "opacity-0"}`}>
+        <p role="alert" className={`min-h-[16px] text-xs ${form.formState.errors.email ? "text-red-500 font-medium" : "opacity-0"}`}>
           {form.formState.errors.email?.message || "\u00A0"}
         </p>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Contraseña <span className="text-red-500">*</span></Label>
-        <PasswordInput id="password" autoComplete="new-password" {...form.register("password")} {...fieldAttrs("password")} />
-        <p className="text-xs text-[var(--text-secondary)]">Debe contener mayúscula, minúscula y número</p>
-        <p className={`min-h-[16px] text-sm ${form.formState.errors.password ? "text-red-400" : "opacity-0"}`}>
+      <div className="space-y-1">
+        <FloatingLabelPasswordInput
+          id="password"
+          autoComplete="new-password"
+          label="Contraseña"
+          {...form.register("password")}
+          {...fieldAttrs("password")}
+        />
+        <p className="text-[10px] text-muted-foreground ml-1">Debe contener mayúscula, minúscula y número</p>
+        <p className={`min-h-[16px] text-xs ${form.formState.errors.password ? "text-red-500 font-medium" : "opacity-0"}`}>
           {form.formState.errors.password?.message || "\u00A0"}
         </p>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirmar contraseña <span className="text-red-500">*</span></Label>
-        <PasswordInput
+      <div className="space-y-1">
+        <FloatingLabelPasswordInput
           id="confirmPassword"
           autoComplete="new-password"
+          label="Confirmar contraseña"
           {...form.register("confirmPassword")}
           {...fieldAttrs("confirmPassword")}
         />
-        <p className={`min-h-[16px] text-sm ${form.formState.errors.confirmPassword ? "text-red-400" : "opacity-0"}`}>
+        <p className={`min-h-[16px] text-xs ${form.formState.errors.confirmPassword ? "text-red-500 font-medium" : "opacity-0"}`}>
           {form.formState.errors.confirmPassword?.message || "\u00A0"}
         </p>
       </div>

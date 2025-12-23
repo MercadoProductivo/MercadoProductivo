@@ -23,10 +23,10 @@ function registerGlobalListeners() {
     if (typeof window === "undefined" || listenerRegistered) return;
     listenerRegistered = true;
 
-    console.log("[PWA] Registrando listeners globales");
+
 
     window.addEventListener("beforeinstallprompt", (e) => {
-        console.log("[PWA] ✅ Evento beforeinstallprompt recibido");
+
         e.preventDefault();
         deferredPrompt = e as BeforeInstallPromptEvent;
         globalCanInstall = true;
@@ -34,7 +34,7 @@ function registerGlobalListeners() {
     });
 
     window.addEventListener("appinstalled", () => {
-        console.log("[PWA] ✅ App instalada");
+
         deferredPrompt = null;
         globalCanInstall = false;
         notifyListeners();
@@ -53,7 +53,7 @@ async function checkReallyInstalled(): Promise<boolean> {
 
     // 1. iOS Safari: usar navigator.standalone
     if ((navigator as any).standalone === true) {
-        console.log("[PWA] Detectado: iOS standalone mode");
+
         return true;
     }
 
@@ -70,20 +70,20 @@ async function checkReallyInstalled(): Promise<boolean> {
 
         // Si estamos en standalone Y en WebView/TWA, es instalada real
         if (isAndroidWebView || isTWA) {
-            console.log("[PWA] Detectado: Android TWA/WebView");
+
             return true;
         }
 
         // Para otros navegadores (Edge, Samsung Internet), confiar en display-mode
         const isChrome = /Chrome/.test(ua) && !/Edg|Samsung/.test(ua);
         if (!isChrome) {
-            console.log("[PWA] Detectado: PWA standalone (no Chrome)");
+
             return true;
         }
 
         // En Chrome Android, display-mode puede dar falso positivo
         // NO confiar ciegamente, verificar con otros indicadores
-        console.log("[PWA] Chrome Android: display-mode standalone pero verificando...");
+
     }
 
     // 3. Fallback: si llegamos aquí, asumir NO instalada
@@ -102,7 +102,7 @@ export function usePWA() {
 
         const check = async () => {
             const installed = await checkReallyInstalled();
-            console.log("[PWA] isInstalled:", installed);
+
             setIsInstalled(installed);
             setIsLoading(false);
         };
@@ -121,7 +121,7 @@ export function usePWA() {
     useEffect(() => {
         const update = () => {
             const available = globalCanInstall && !isInstalled;
-            console.log("[PWA] canInstall update:", { globalCanInstall, isInstalled, available });
+
             setCanInstall(available);
         };
 
@@ -136,17 +136,17 @@ export function usePWA() {
     // Función de instalación
     const install = useCallback(async (): Promise<"accepted" | "dismissed" | "unavailable"> => {
         if (!deferredPrompt) {
-            console.log("[PWA] install() llamado pero no hay deferredPrompt");
+
             return "unavailable";
         }
 
         setIsInstalling(true);
 
         try {
-            console.log("[PWA] Mostrando prompt de instalación...");
+
             await deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            console.log("[PWA] Resultado:", outcome);
+
 
             if (outcome === "accepted") {
                 deferredPrompt = null;
@@ -171,7 +171,7 @@ export function usePWA() {
         // Solo registrar en producción o con HTTPS/localhost
         if (location.protocol === "https:" || location.hostname === "localhost") {
             navigator.serviceWorker.register("/sw.js", { scope: "/" })
-                .then((reg) => console.log("[PWA] SW registrado:", reg.scope))
+                .then((reg) => { }) // SW registrado con éxito
                 .catch((err) => console.warn("[PWA] Error registrando SW:", err));
         }
     }, []);

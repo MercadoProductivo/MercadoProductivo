@@ -1,10 +1,10 @@
 "use client";
 
-import { Download, Loader2, Check, AlertCircle } from "lucide-react";
+import { DownloadIcon, LoaderPinwheelIcon, CheckIcon, AlertCircleIcon, LoaderPinwheelIconHandle } from "@/components/animated-icons";
 import { Button } from "@/components/ui/button";
 import { usePWA } from "@/hooks/use-pwa";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 
 interface PWAInstallButtonProps {
@@ -20,8 +20,18 @@ export function PWAInstallButton({
     size = "sm",
     showLabel = true,
 }: PWAInstallButtonProps) {
-    const { canInstall, isInstalling, isInstalled, isLoading, install, hasDeferredPrompt } = usePWA();
+    const { canInstall, isInstalling, isInstalled, isLoading, install } = usePWA();
     const [justInstalled, setJustInstalled] = useState(false);
+    const loaderRef = useRef<LoaderPinwheelIconHandle>(null);
+
+    // Start/stop loader animation based on installing state
+    useEffect(() => {
+        if (isInstalling) {
+            loaderRef.current?.startAnimation();
+        } else {
+            loaderRef.current?.stopAnimation();
+        }
+    }, [isInstalling]);
 
     // Mientras carga, no mostrar nada
     if (isLoading) {
@@ -35,7 +45,7 @@ export function PWAInstallButton({
 
     const handleClick = async () => {
         // Diagnóstico para debugging
-        console.log("[PWA Button] Click - canInstall:", canInstall, "hasDeferredPrompt:", hasDeferredPrompt());
+
 
         if (!canInstall) {
             // El evento beforeinstallprompt no llegó aún
@@ -76,13 +86,13 @@ export function PWAInstallButton({
             )}
         >
             {isInstalling ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LoaderPinwheelIcon ref={loaderRef} size={16} />
             ) : justInstalled ? (
-                <Check className="h-4 w-4" />
+                <CheckIcon size={16} />
             ) : !canInstall ? (
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircleIcon size={16} />
             ) : (
-                <Download className="h-4 w-4" />
+                <DownloadIcon size={16} />
             )}
             {showLabel && (
                 <span className="hidden sm:inline">
@@ -94,3 +104,4 @@ export function PWAInstallButton({
 }
 
 export default PWAInstallButton;
+

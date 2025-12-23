@@ -20,13 +20,21 @@ async function ensureFeatureFlagLoaded(): Promise<void> {
   if (featureChecked) return;
   try {
     const res = await fetch("/api/feature-flags", { cache: "no-store" });
-    if (res.ok) {
+    if (res.status === 403) {
+      // En producción, el endpoint devuelve 403 por seguridad.
+      // Usar variable de entorno pública como fallback.
+      featureEnabled = process.env.NEXT_PUBLIC_FEATURE_CHAT_V2_ENABLED === "true";
+    } else if (res.ok) {
       const j = await res.json();
       // El API retorna { backend: { chatV2Enabled }, frontend: { chatV2Enabled }, ... }
       featureEnabled = Boolean(j?.backend?.chatV2Enabled || j?.frontend?.chatV2Enabled || j?.chatV2Enabled);
+    } else {
+      // Para otros errores, también usar fallback de env var
+      featureEnabled = process.env.NEXT_PUBLIC_FEATURE_CHAT_V2_ENABLED === "true";
     }
   } catch {
-    // ignorar
+    // Error de red: usar fallback
+    featureEnabled = process.env.NEXT_PUBLIC_FEATURE_CHAT_V2_ENABLED === "true";
   } finally {
     featureChecked = true;
   }

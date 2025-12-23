@@ -81,7 +81,7 @@ export default function MarketplaceView() {
         const roleRaw = (u?.user?.user_metadata?.role || u?.user?.user_metadata?.user_type || "").toString();
         const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
         setIsVendor(roleNormalized === "seller");
-      } catch {}
+      } catch { }
     } catch (e) {
       toast.error("Error al cambiar a vendedor");
     } finally {
@@ -193,21 +193,28 @@ export default function MarketplaceView() {
       </div>
 
       {/* Sección Principal del Marketplace */}
-      <section id="productos" className="py-16 bg-gray-50">
+      <section id="productos" className="py-20 bg-gradient-to-b from-slate-50 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header de la sección */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          {/* Header de la sección con animación */}
+          <div className="text-center mb-16 animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
+            <span className="inline-block px-4 py-1.5 bg-orange-100 text-orange-600 text-sm font-semibold rounded-full mb-4">
+              🛒 Marketplace
+            </span>
+            <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900 bg-clip-text text-transparent mb-6">
               Todos los Productos
             </h2>
-            <div className="w-24 h-1 bg-orange-500 mx-auto mb-6"></div>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="h-1 w-12 bg-gradient-to-r from-transparent to-orange-500 rounded-full" />
+              <div className="h-1.5 w-16 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full" />
+              <div className="h-1 w-12 bg-gradient-to-l from-transparent to-orange-500 rounded-full" />
+            </div>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
               Explora nuestra amplia selección de productos agroindustriales de la mejor calidad
             </p>
           </div>
 
-          {/* Filtros */}
-          <div className="mb-8">
+          {/* Filtros con sombra suave */}
+          <div className="mb-10 animate-in fade-in-0 slide-in-from-bottom-2 duration-500 delay-150">
             <ProductFilters
               filters={filters}
               onFiltersChange={handleFiltersChange}
@@ -220,22 +227,35 @@ export default function MarketplaceView() {
           </div>
 
           {/* Grid de Productos */}
-          <ProductsGrid
-            filters={filters}
-            onProductsCountChange={handleProductsCountChange}
-            variant="comfortable"
-            pageSize={isMobile ? 10 : 20}
-          />
+          <div className="animate-in fade-in-0 duration-500 delay-200">
+            <ProductsGrid
+              filters={filters}
+              onProductsCountChange={handleProductsCountChange}
+              variant="comfortable"
+              pageSize={isMobile ? 10 : 20}
+            />
+          </div>
         </div>
       </section>
 
       {/* Sección de llamada a la acción */}
-      <section className="py-16 bg-gradient-to-r from-orange-500 to-orange-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+      <section className="relative py-20 overflow-hidden">
+        {/* Fondo con gradiente y patrón */}
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-500 via-orange-600 to-amber-600" />
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-full h-full"
+            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}
+          />
+        </div>
+
+        <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <span className="inline-block px-4 py-1.5 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold rounded-full mb-6">
+            🚀 Empieza a vender hoy
+          </span>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
             ¿Tienes productos para vender?
           </h2>
-          <p className="text-xl text-orange-100 mb-8">
+          <p className="text-xl text-orange-100 mb-10 max-w-2xl mx-auto">
             Únete a nuestra comunidad de vendedores y llega a miles de compradores
           </p>
 
@@ -245,11 +265,11 @@ export default function MarketplaceView() {
               <div className="flex justify-center">
                 <Link
                   href="/dashboard/products/new"
-                  className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md bg-white text-orange-600 hover:bg-orange-50 transition-colors"
+                  className="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full bg-white text-orange-600 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2"
+                    className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -267,13 +287,13 @@ export default function MarketplaceView() {
                 <button
                   type="button"
                   onClick={() => router.push("/ser-vendedor")}
-                  className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-orange-600 bg-white hover:bg-orange-50 transition-colors"
+                  className="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full text-orange-600 bg-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
                 >
                   Cambiar a vendedor
                 </button>
                 <a
                   href="/planes"
-                  className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-base font-medium rounded-md text-white hover:bg-white hover:text-orange-600 transition-colors"
+                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full border-2 border-white text-white hover:bg-white hover:text-orange-600 transition-all duration-300"
                 >
                   Ver planes
                 </a>
@@ -283,13 +303,13 @@ export default function MarketplaceView() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="/auth/register"
-                className="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-orange-600 bg-white hover:bg-orange-50 transition-colors"
+                className="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full text-orange-600 bg-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
               >
                 Crear cuenta gratis
               </a>
               <a
                 href="/planes"
-                className="inline-flex items-center justify-center px-8 py-3 border-2 border-white text-base font-medium rounded-md text-white hover:bg-white hover:text-orange-600 transition-colors"
+                className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full border-2 border-white text-white hover:bg-white hover:text-orange-600 transition-all duration-300"
               >
                 Ver planes
               </a>

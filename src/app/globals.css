@@ -33,7 +33,8 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 24 95% 53%;
 
-  --radius: 0.75rem; /* 12px */
+  --radius: 0.75rem;
+  /* 12px */
 
   /* Safe area (iOS notch) */
   --sat: env(safe-area-inset-top, 0px);
@@ -42,35 +43,7 @@
   --sal: env(safe-area-inset-left, 0px);
 }
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
 
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-
-  --primary: 24 95% 53%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-
-  --destructive: 0 72.2% 50.6%;
-  --destructive-foreground: 210 40% 98%;
-
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 24 95% 53%;
-}
 
 html,
 body,
@@ -89,7 +62,7 @@ html {
 
 body {
   position: relative;
-    min-height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   /* Scroll solo en body */
@@ -101,8 +74,11 @@ body {
 
 /* Fallback: si el navegador no soporta scrollbar-gutter, reserva el canal siempre */
 @supports not (scrollbar-gutter: stable) {
+
   /* Asegura que el ancho del scroll esté siempre reservado */
-  html { overflow-y: scroll; }
+  html {
+    overflow-y: scroll;
+  }
 }
 
 /* Radix UI / react-remove-scroll pueden inyectar padding/margin-right para compensar el scrollbar.
@@ -129,6 +105,7 @@ body.react-remove-scroll-body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -138,9 +115,12 @@ body.react-remove-scroll-body {
 
 /* Utilidad para animar gradientes horizontales */
 @keyframes gradient-x {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
@@ -153,18 +133,33 @@ body.react-remove-scroll-body {
   }
 
   /* Safe area paddings */
-  .pt-safe { padding-top: var(--sat); }
-  .pr-safe { padding-right: var(--sar); }
-  .pb-safe { padding-bottom: var(--sab); }
-  .pl-safe { padding-left: var(--sal); }
+  .pt-safe {
+    padding-top: var(--sat);
+  }
+
+  .pr-safe {
+    padding-right: var(--sar);
+  }
+
+  .pb-safe {
+    padding-bottom: var(--sab);
+  }
+
+  .pl-safe {
+    padding-left: var(--sal);
+  }
 
   /* Contenido principal: compensa header fijo + safe area */
-  .pt-header-safe { padding-top: calc(3.5rem + var(--sat)); }
+  .pt-header-safe {
+    padding-top: calc(3.5rem + var(--sat));
+  }
 }
 
 /* sm: pt-16 (4rem) + safe-top */
 @media (min-width: 640px) {
-  .pt-header-safe { padding-top: calc(4rem + var(--sat)); }
+  .pt-header-safe {
+    padding-top: calc(4rem + var(--sat));
+  }
 }
 
 /* Utilidad para fixed bottom-right respetando safe areas (equivale a bottom-4 right-4) */

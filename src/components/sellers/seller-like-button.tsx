@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Heart } from "lucide-react";
+import React, { useRef } from "react";
+import { HeartIcon, HeartIconHandle } from "@/components/animated-icons";
 import confirmModal from "@/components/ui/confirm-modal";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +30,7 @@ export default function SellerLikeButton({ sellerId, planCode, initialLikes = 0,
   const [likesCount, setLikesCount] = React.useState<number>(initialLikes);
   const [loading, setLoading] = React.useState<boolean>(false);
   const mountedRef = React.useRef(false);
+  const heartRef = useRef<HeartIconHandle>(null);
 
   const paid = isPaidPlan(planCode);
 
@@ -44,7 +45,7 @@ export default function SellerLikeButton({ sellerId, planCode, initialLikes = 0,
         if (!active) return;
         if (typeof json.likes_count === "number") setLikesCount(json.likes_count);
         if (typeof json.liked === "boolean") setLiked(json.liked);
-      } catch {}
+      } catch { }
     }
     if (!mountedRef.current) {
       mountedRef.current = true;
@@ -59,6 +60,10 @@ export default function SellerLikeButton({ sellerId, planCode, initialLikes = 0,
     if (!paid) return; // Sólo visible en planes pagos, evitar interacción
     if (loading) return;
     setLoading(true);
+
+    // Trigger pulse animation on click
+    heartRef.current?.startAnimation();
+
     try {
       const res = await fetch(`/api/likes/${sellerId}`, { method: "POST" });
       if (res.status === 401) {
@@ -97,7 +102,7 @@ export default function SellerLikeButton({ sellerId, planCode, initialLikes = 0,
         let err: any = null;
         try {
           err = await res.json();
-        } catch {}
+        } catch { }
         if (err?.error === "SELF_LIKE_FORBIDDEN") {
           await confirmModal({
             title: "Acción no permitida",
@@ -138,11 +143,14 @@ export default function SellerLikeButton({ sellerId, planCode, initialLikes = 0,
       aria-pressed={liked}
       aria-label={liked ? "Quitar like" : "Dar like"}
     >
-      <Heart
-        className={cn(size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4", liked ? "text-rose-600" : "text-gray-500")}
-        fill={liked ? "currentColor" : "none"}
+      <HeartIcon
+        ref={heartRef}
+        className={cn(liked ? "text-rose-600" : "text-gray-500")}
+        size={size === "sm" ? 14 : 16}
+        style={liked ? { fill: "currentColor" } : undefined}
       />
       <span className={cn("tabular-nums", liked ? "text-rose-700" : "text-gray-700")}>{likesCount}</span>
     </button>
   );
 }
+

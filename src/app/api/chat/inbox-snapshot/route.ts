@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export async function GET() {
   if (process.env.FEATURE_CHAT_V2_ENABLED !== "true") {
     // Log debug info
-    console.log("Chat Inbox V2 Disabled by Env Var");
+
     return NextResponse.json(
       { error: "CHAT_DESHABILITADO", message: "El sistema de chat v2 está temporalmente deshabilitado." },
       { status: 410 }

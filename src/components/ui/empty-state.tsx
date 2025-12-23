@@ -4,7 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Users, Globe, AlertCircle, Package } from "lucide-react";
+import {
+    UsersIcon,
+    EarthIcon,
+    AlertCircleIcon,
+    PackageIcon
+} from "@/components/animated-icons";
 
 export type EmptyStateVariant = "empty" | "error";
 export type EmptyStateType = "sellers" | "exporters" | "products" | "services" | "generic";
@@ -32,27 +37,27 @@ const defaultContent: Record<EmptyStateType, { title: string; description: strin
     sellers: {
         title: "No hay vendedores disponibles",
         description: "Actualmente no hay vendedores registrados en la plataforma. ¡Sé el primero en ofrecer tus productos!",
-        icon: <Users className="h-16 w-16 text-orange-400" aria-hidden="true" />,
+        icon: <UsersIcon className="text-orange-400" size={64} aria-hidden="true" />,
     },
     exporters: {
         title: "No hay exportadores disponibles",
         description: "Aún no hay empresas exportadoras registradas. Pronto podrás encontrar grandes oportunidades de negocio.",
-        icon: <Globe className="h-16 w-16 text-orange-400" aria-hidden="true" />,
+        icon: <EarthIcon className="text-orange-400" size={64} aria-hidden="true" />,
     },
     products: {
         title: "No hay productos disponibles",
         description: "No se encontraron productos que coincidan con tu búsqueda.",
-        icon: <Package className="h-16 w-16 text-orange-400" aria-hidden="true" />,
+        icon: <PackageIcon className="text-orange-400" size={64} aria-hidden="true" />,
     },
     services: {
         title: "No hay servicios disponibles",
         description: "No se encontraron servicios que coincidan con tu búsqueda.",
-        icon: <Package className="h-16 w-16 text-orange-400" aria-hidden="true" />,
+        icon: <PackageIcon className="text-orange-400" size={64} aria-hidden="true" />,
     },
     generic: {
         title: "Sin resultados",
         description: "No hay elementos para mostrar en este momento.",
-        icon: <Package className="h-16 w-16 text-gray-400" aria-hidden="true" />,
+        icon: <PackageIcon className="text-gray-400" size={64} aria-hidden="true" />,
     },
 };
 
@@ -98,7 +103,7 @@ export function EmptyState({
     const isError = variant === "error";
     const content = isError ? errorContent[type] : defaultContent[type];
     const defaultIcon = isError ? (
-        <AlertCircle className="h-16 w-16 text-red-400" aria-hidden="true" />
+        <AlertCircleIcon className="text-red-400" size={64} aria-hidden="true" />
     ) : (
         defaultContent[type].icon
     );

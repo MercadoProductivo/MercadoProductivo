@@ -15,10 +15,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 import { MenuActionButton } from "@/components/ui/menu-buttons";
-import { MAIN_NAV } from "@/config/navigation";
+import { MAIN_NAV, getDashboardNav } from "@/config/navigation";
 import { useNotifications } from "@/providers/notifications-provider";
 import { Logo } from "@/components/ui/logo";
 import { PWAInstallButton } from "@/components/pwa";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function SiteHeader() {
   const [user, setUser] = useState<User | null>(null);
@@ -326,10 +329,131 @@ export default function SiteHeader() {
             )}
           </div>
 
-          {/* Botón de menú móvil eliminado - reemplazado por menú hamburguesa global */}
-        </div>
+          {/* Mobile Menu - Oculto ya que se usa el botón flotante global */}
+          <div className="hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <button
+                  className="inline-flex items-center justify-center p-2 rounded-md text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+                  aria-label="Abrir menú principal"
+                >
+                  <span className="sr-only">Abrir menú principal</span>
+                  {/* Icono Menu Hamburguesa */}
+                  <svg
+                    className="h-6 w-6"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[300px] sm:w-[400px] pr-0">
+                <div className="px-7 pt-4 pb-6">
+                  <Link
+                    href="/"
+                    className="flex items-center space-x-2 font-bold"
+                    onClick={() => {
+                      // Close sheet logic is handled by Sheet primitive usually, 
+                      // but if we need manual close we might need controlled state.
+                      // For now relying on default behavior or link navigation.
+                    }}
+                  >
+                    <span className="text-xl">Mercado Productivo</span>
+                  </Link>
+                </div>
+                <div className="h-full overflow-y-auto px-7 pb-20">
+                  <div className="flex flex-col space-y-4">
+                    <nav className="flex flex-col space-y-2">
+                      {navItems.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            "text-base font-medium transition-colors hover:text-primary py-2 block",
+                            isActive(item.href) ? "text-primary" : "text-foreground/70"
+                          )}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </nav>
 
-        {/* Menú móvil expandido eliminado - reemplazado por menú hamburguesa global */}
+                    {user && (
+                      <div className="border-t pt-4 mt-2">
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Mi Cuenta</p>
+                        <nav className="flex flex-col space-y-2">
+                          {getDashboardNav(isSeller).map((item) => (
+                            <Link
+                              key={item.href}
+                              href={item.href}
+                              className={cn(
+                                "flex items-center gap-2 text-base font-medium transition-colors hover:text-primary py-2",
+                                isActive(item.href) ? "text-primary" : "text-foreground/70"
+                              )}
+                            >
+                              {item.icon && <item.icon className="h-4 w-4" />}
+                              {item.label}
+                            </Link>
+                          ))}
+                        </nav>
+                      </div>
+                    )}
+
+                    <div className="border-t pt-4 mt-4">
+                      {user ? (
+                        <div className="flex flex-col space-y-3">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={(user.user_metadata as any)?.avatar_url || (user.user_metadata as any)?.picture} alt={displayName} />
+                              <AvatarFallback>{displayName?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-sm">{profileName}</span>
+                              <span className="text-xs text-muted-foreground truncate max-w-[180px]">{user.email}</span>
+                            </div>
+                          </div>
+
+                          <Link
+                            href="/dashboard"
+                            className="flex items-center py-2 text-sm font-medium text-foreground/70 hover:text-primary"
+                          >
+                            Ir al Dashboard
+                          </Link>
+
+                          <button
+                            onClick={handleSignOut}
+                            className="flex items-center py-2 text-sm font-medium text-red-500 hover:text-red-600 text-left"
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            Cerrar Sesión
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col space-y-3">
+                          <Link href="/auth/login">
+                            <Button variant="ghost" className="w-full justify-start">Iniciar Sesión</Button>
+                          </Link>
+                          <Link href="/auth/register">
+                            <Button className="w-full">Crear Cuenta</Button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
       </header>
       {/* Banner de instalación removido para evitar conflicto con el botón */}
     </>

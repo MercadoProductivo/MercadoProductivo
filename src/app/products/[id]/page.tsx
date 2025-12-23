@@ -183,7 +183,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
-        <Button asChild variant="ghost" className="w-fit px-0 text-primary">
+        <Button asChild variant="ghost" className="w-fit px-0 text-primary hover:text-primary/80">
           <Link href="/" className="inline-flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" /> Volver al marketplace
           </Link>
@@ -199,9 +199,9 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
         {/* Datos */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold sm:text-3xl">{product.title}</h1>
+            <h1 className="text-2xl font-semibold sm:text-3xl text-foreground">{product.title}</h1>
             {isFeatured && (
-              <Badge className="bg-orange-500 text-white">
+              <Badge className="bg-primary text-primary-foreground">
                 <Star className="mr-1 h-3 w-3" /> Destacado
               </Badge>
             )}
@@ -215,7 +215,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
             </div>
           </div>
 
-          <div className={`text-2xl font-bold ${price === 'Consultar' ? 'text-orange-600' : 'text-gray-900'}`}>{price}</div>
+          <div className={`text-2xl font-bold ${price === 'Consultar' ? 'text-primary' : 'text-foreground'}`}>{price}</div>
 
           <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">
@@ -234,13 +234,13 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Descripción</CardTitle>
+              <CardTitle className="text-base text-foreground">Descripción</CardTitle>
               <CardDescription>
                 Detalles del producto proporcionados por el vendedor
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="whitespace-pre-wrap leading-relaxed">{product.description}</p>
+              <p className="whitespace-pre-wrap leading-relaxed text-foreground/90">{product.description}</p>
             </CardContent>
           </Card>
 

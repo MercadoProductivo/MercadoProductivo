@@ -15,6 +15,10 @@ import Image from "next/image";
 import { buildSafeStoragePath } from "@/lib/images";
 import { Switch } from "@/components/ui/switch";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { Camera, MapPin, User, Building, Phone, Mail, FileText, Globe } from "lucide-react";
 
 function isValidDniCuit(raw: string): boolean {
   const digits = (raw || "").replace(/\D/g, "");
@@ -574,307 +578,315 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
   const canToggleExportador = exportadorColumnExistsRef.current && hasExportadorCapability(planCodeLower);
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-      <div className="flex items-center gap-4">
-        <div className="relative h-16 w-16 overflow-hidden rounded-full bg-muted sm:h-20 sm:w-20">
-          {avatarUrl ? (
-            <Image src={avatarUrl} alt="Avatar" fill className="object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">Sin avatar</div>
-          )}
-        </div>
-        <div className="flex flex-col gap-1">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={allDisabled || avatarUploading}
-            onClick={() => avatarInputRef.current?.click()}
-            className="w-fit"
-          >
-            {avatarUploading ? "Subiendo..." : "Cambiar avatar"}
-          </Button>
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/*"
-            className="sr-only"
-            onChange={onAvatarInputChange}
-            disabled={allDisabled || avatarUploading}
-          />
-          <p className="text-xs text-muted-foreground">Formatos soportados: JPG, PNG, WEBP. Máx {AVATAR_MAX_MB}MB.</p>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label
-            htmlFor="first_name"
-            className={form.getFieldState("first_name", form.formState).error ? "text-red-600" : undefined}
-          >
-            Nombre <span className="text-red-600">*</span>
-          </Label>
-          <Input
-            id="first_name"
-            {...form.register("first_name")}
-            {...fieldAttrs("first_name")}
-            aria-describedby="first_name-error"
-            disabled={allDisabled}
-            className={form.getFieldState("first_name", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-          />
-          {form.getFieldState("first_name", form.formState).error && (
-            <p role="alert" id="first_name-error" className="text-xs text-red-500">
-              {form.getFieldState("first_name", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label
-            htmlFor="last_name"
-            className={form.getFieldState("last_name", form.formState).error ? "text-red-600" : undefined}
-          >
-            Apellido <span className="text-red-600">*</span>
-          </Label>
-          <Input
-            id="last_name"
-            {...form.register("last_name")}
-            {...fieldAttrs("last_name")}
-            aria-describedby="last_name-error"
-            disabled={allDisabled}
-            className={form.getFieldState("last_name", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-          />
-          {form.getFieldState("last_name", form.formState).error && (
-            <p role="alert" id="last_name-error" className="text-xs text-red-500">
-              {form.getFieldState("last_name", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label
-          htmlFor="email"
-          className={form.getFieldState("email", form.formState).error ? "text-red-600" : undefined}
-        >
-          Email <span className="text-red-600">*</span>
-        </Label>
-        <Input
-          id="email"
-          {...form.register("email")}
-          readOnly
-          disabled
-          aria-describedby="email-error"
-          className={form.getFieldState("email", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-        />
-        {form.getFieldState("email", form.formState).error && (
-          <p id="email-error" className="text-xs text-red-600">
-            {form.getFieldState("email", form.formState).error?.message}
-          </p>
-        )}
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label
-            htmlFor="dni_cuit"
-            className={form.getFieldState("dni_cuit", form.formState).error ? "text-red-600" : undefined}
-          >
-            DNI o CUIT (Empresa) <span className="text-red-600">*</span>
-          </Label>
-          <Input
-            id="dni_cuit"
-            {...form.register("dni_cuit")}
-            {...fieldAttrs("dni_cuit")}
-            aria-describedby="dni_cuit-error"
-            disabled={allDisabled}
-            className={form.getFieldState("dni_cuit", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-          />
-          {form.getFieldState("dni_cuit", form.formState).error && (
-            <p role="alert" id="dni_cuit-error" className="text-xs text-red-500">
-              {form.getFieldState("dni_cuit", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="company">Empresa (Se mostrará públicamente)</Label>
-          <Input id="company" {...form.register("company")} {...fieldAttrs("company")} disabled={allDisabled} />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-        <div className="space-y-2 lg:col-span-1">
-          <Label className={form.getFieldState("province", form.formState).error ? "text-red-600" : undefined}>
-            Provincia <span className="text-red-600">*</span>
-          </Label>
-          <Controller
-            name="province"
-            control={form.control}
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
-                <SelectTrigger
-                  aria-invalid={form.getFieldState("province", form.formState).error ? true : undefined}
-                  aria-describedby="province-error"
-                  disabled={allDisabled}
-                  className={form.getFieldState("province", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-                >
-                  <SelectValue placeholder="Selecciona provincia" />
-                </SelectTrigger>
-                <SelectContent position="popper" className="z-50">
-                  {provinces.map((p) => (
-                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {form.getFieldState("province", form.formState).error && (
-            <p role="alert" id="province-error" className="text-xs text-red-500">
-              {form.getFieldState("province", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2 lg:col-span-1">
-          <Label className={form.getFieldState("city", form.formState).error ? "text-red-600" : undefined}>
-            Localidad <span className="text-red-600">*</span>
-          </Label>
-          <Controller
-            name="city"
-            control={form.control}
-            render={({ field }) => (
-              <Select
-                value={field.value}
-                onValueChange={field.onChange}
-                disabled={allDisabled || !form.getValues("province") || loadingLocalities || localities.length === 0}
-              >
-                <SelectTrigger
-                  aria-invalid={form.getFieldState("city", form.formState).error ? true : undefined}
-                  aria-describedby="city-error"
-                  disabled={allDisabled}
-                  className={form.getFieldState("city", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-                >
-                  <SelectValue placeholder={
-                    !form.getValues("province")
-                      ? "Selecciona provincia primero"
-                      : loadingLocalities
-                        ? "Cargando..."
-                        : localities.length === 0
-                          ? "Sin datos"
-                          : "Selecciona localidad"
-                  } />
-                </SelectTrigger>
-                <SelectContent position="popper" className="z-50">
-                  {localities.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {form.getFieldState("city", form.formState).error && (
-            <p role="alert" id="city-error" className="text-xs text-red-500">
-              {form.getFieldState("city", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2 lg:col-span-2">
-          <Label
-            htmlFor="address"
-            className={form.getFieldState("address", form.formState).error ? "text-red-600" : undefined}
-          >
-            Dirección <span className="text-red-600">*</span>
-          </Label>
-          <Input
-            id="address"
-            {...form.register("address")}
-            {...fieldAttrs("address")}
-            placeholder="Calle y número"
-            aria-describedby="address-error"
-            disabled={allDisabled}
-            className={form.getFieldState("address", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-          />
-          {form.getFieldState("address", form.formState).error && (
-            <p role="alert" id="address-error" className="text-xs text-red-500">
-              {form.getFieldState("address", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label
-            htmlFor="cp"
-            className={form.getFieldState("cp", form.formState).error ? "text-red-600" : undefined}
-          >
-            Código Postal <span className="text-red-600">*</span>
-          </Label>
-          <Input
-            id="cp"
-            {...form.register("cp")}
-            {...fieldAttrs("cp")}
-            placeholder="Código Postal"
-            aria-describedby="cp-error"
-            disabled={allDisabled}
-            className={form.getFieldState("cp", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-          />
-          {form.getFieldState("cp", form.formState).error && (
-            <p id="cp-error" className="text-xs text-red-600">
-              {form.getFieldState("cp", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label
-            htmlFor="phone"
-            className={form.getFieldState("phone", form.formState).error ? "text-red-600" : undefined}
-          >
-            Teléfono (WhatsApp)
-          </Label>
-          <Input
-            id="phone"
-            value={form.watch("phone") || ""}
-            onChange={handlePhoneChange}
-            placeholder="Ej: 11 1234 5678"
-            aria-describedby="phone-error"
-            disabled={allDisabled}
-            className={form.getFieldState("phone", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : undefined}
-          />
-          {form.getFieldState("phone", form.formState).error && (
-            <p role="alert" id="phone-error" className="text-xs text-red-500">
-              {form.getFieldState("phone", form.formState).error?.message}
-            </p>
-          )}
-        </div>
-      </div>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
 
-      {/* Switch Exportador (sólo visible para plan con capacidad: deluxe/diamond/premium/pro) */}
-      {canToggleExportador && (
-        <div className="rounded-lg border border-orange-200 bg-gradient-to-r from-orange-50/60 to-transparent p-4 sm:p-5 shadow-sm">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div className="mb-1 inline-flex items-center gap-2">
-                <Label className="text-sm font-medium">¿Mostrarse como Exportador?</Label>
-                <span className="inline-flex items-center rounded-full border border-orange-300 bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700">
-                  Beneficio Deluxe
-                </span>
+      {/* SECCIÓN 1: Identidad (Avatar + Nombre) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <User className="h-5 w-5 text-orange-500" />
+            Información Personal
+          </CardTitle>
+          <CardDescription>Tu identidad pública en la plataforma.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {/* Avatar Row */}
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative group shrink-0">
+              <Avatar className="h-28 w-28 border-4 border-white shadow-lg cursor-pointer bg-slate-100">
+                <AvatarImage src={avatarUrl || ""} className="object-cover" />
+                <AvatarFallback className="bg-orange-100 text-orange-600 text-3xl font-bold">
+                  {form.getValues("first_name")?.[0]?.toUpperCase()}{form.getValues("last_name")?.[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div
+                className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer backdrop-blur-[1px]"
+                onClick={() => avatarInputRef.current?.click()}
+              >
+                <Camera className="h-8 w-8 text-white drop-shadow-md" />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Activa esta opción para aparecer en el listado público de exportadores visibles para compradores.
-              </p>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={onAvatarInputChange}
+                disabled={allDisabled || avatarUploading}
+              />
             </div>
-            <Controller
-              name="exportador"
-              control={form.control}
-              render={({ field }) => (
-                <Switch
-                  checked={Boolean(field.value)}
-                  onCheckedChange={(v) => { const prev = Boolean(field.value); field.onChange(v); void saveExportadorImmediate(v, prev); }}
-                  disabled={saving || savingExportador}
-                  aria-invalid={undefined}
-                />
-              )}
-            />
+            <div className="flex-1 space-y-2 text-center sm:text-left">
+              <h3 className="font-medium text-lg">Tu Foto de Perfil</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Sube una foto clara y profesional. Esta imagen será visible para los compradores y en tus publicaciones.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={avatarUploading}
+                >
+                  <Camera className="h-3.5 w-3.5" />
+                  {avatarUploading ? "Subiendo..." : "Cambiar imagen"}
+                </Button>
+                <span className="text-xs text-muted-foreground">Máx {AVATAR_MAX_MB}MB. JPG, PNG.</span>
+              </div>
+            </div>
           </div>
-        </div>
+
+          <Separator />
+
+          {/* Names Input */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="first_name" className={form.getFieldState("first_name", form.formState).error ? "text-red-600" : ""}>
+                Nombre <span className="text-red-500">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="first_name"
+                  {...form.register("first_name")}
+                  className={form.getFieldState("first_name", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : ""}
+                  disabled={allDisabled}
+                  placeholder="Tu nombre"
+                />
+              </div>
+              {form.getFieldState("first_name", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("first_name", form.formState).error?.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last_name" className={form.getFieldState("last_name", form.formState).error ? "text-red-600" : ""}>
+                Apellido <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="last_name"
+                {...form.register("last_name")}
+                className={form.getFieldState("last_name", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : ""}
+                disabled={allDisabled}
+                placeholder="Tu apellido"
+              />
+              {form.getFieldState("last_name", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("last_name", form.formState).error?.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Fiscal Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="dni_cuit" className={form.getFieldState("dni_cuit", form.formState).error ? "text-red-600" : ""}>
+                DNI o CUIT <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="dni_cuit"
+                {...form.register("dni_cuit")}
+                className={form.getFieldState("dni_cuit", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : ""}
+                disabled={allDisabled}
+                placeholder="Sin puntos ni guiones"
+              />
+              {form.getFieldState("dni_cuit", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("dni_cuit", form.formState).error?.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Empresa (Opcional)</Label>
+              <div className="relative">
+                <Building className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/50" />
+                <Input
+                  id="company"
+                  {...form.register("company")}
+                  className="pl-9"
+                  placeholder="Nombre de tu negocio"
+                  disabled={allDisabled}
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SECCIÓN 2: Contacto */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Mail className="h-5 w-5 text-orange-500" />
+            Información de Contacto
+          </CardTitle>
+          <CardDescription>Medios para contactarte y recibir notificaciones.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/50" />
+                <Input
+                  id="email"
+                  {...form.register("email")}
+                  readOnly
+                  disabled
+                  className="bg-slate-50 pl-9 font-medium text-slate-600"
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground">Para cambiar tu email, contacta a soporte.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Teléfono / WhatsApp</Label>
+              <div className="relative">
+                <Phone className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground/50" />
+                <Input
+                  id="phone"
+                  value={form.watch("phone") || ""}
+                  onChange={handlePhoneChange}
+                  placeholder="Ej: +54 9 11 1234 5678"
+                  className={`pl-9 ${form.getFieldState("phone", form.formState).error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                  disabled={allDisabled}
+                />
+              </div>
+              {form.getFieldState("phone", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("phone", form.formState).error?.message}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SECCIÓN 3: Ubicación */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <MapPin className="h-5 w-5 text-orange-500" />
+            Ubicación
+          </CardTitle>
+          <CardDescription>Dirección para gestión de envíos.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Provincia y City Selects */}
+            <div className="space-y-2">
+              <Label className={form.getFieldState("province", form.formState).error ? "text-red-600" : ""}>Provincia <span className="text-red-500">*</span></Label>
+              <Controller
+                name="province"
+                control={form.control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+                    <SelectTrigger className={form.getFieldState("province", form.formState).error ? "border-red-500" : ""} disabled={allDisabled}>
+                      <SelectValue placeholder="Seleccionar..." />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="max-h-[200px]">
+                      {provinces.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {form.getFieldState("province", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("province", form.formState).error?.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className={form.getFieldState("city", form.formState).error ? "text-red-600" : ""}>Localidad <span className="text-red-500">*</span></Label>
+              <Controller
+                name="city"
+                control={form.control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={allDisabled || !form.getValues("province") || loadingLocalities || localities.length === 0}
+                  >
+                    <SelectTrigger className={form.getFieldState("city", form.formState).error ? "border-red-500" : ""}>
+                      <SelectValue placeholder={!form.getValues("province") ? "Elige provincia primero" : loadingLocalities ? "Cargando..." : "Seleccionar..."} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="max-h-[200px]">
+                      {localities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {form.getFieldState("city", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("city", form.formState).error?.message}</p>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+            <div className="md:col-span-9 space-y-2">
+              <Label className={form.getFieldState("address", form.formState).error ? "text-red-600" : ""}>Dirección <span className="text-red-500">*</span></Label>
+              <Input
+                {...form.register("address")}
+                placeholder="Calle, Número, Piso, Depto"
+                disabled={allDisabled}
+                className={form.getFieldState("address", form.formState).error ? "border-red-500" : ""}
+              />
+              {form.getFieldState("address", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("address", form.formState).error?.message}</p>
+              )}
+            </div>
+            <div className="md:col-span-3 space-y-2">
+              <Label className={form.getFieldState("cp", form.formState).error ? "text-red-600" : ""}>CP <span className="text-red-500">*</span></Label>
+              <Input
+                {...form.register("cp")}
+                disabled={allDisabled}
+                placeholder="1234"
+                className={form.getFieldState("cp", form.formState).error ? "border-red-500" : ""}
+              />
+              {form.getFieldState("cp", form.formState).error && (
+                <p role="alert" className="text-xs text-red-500 font-medium">{form.getFieldState("cp", form.formState).error?.message}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SWITCH EXPORTADOR - Enhanced */}
+      {canToggleExportador && (
+        <Card className="border-orange-200 bg-orange-50/40 overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-orange-400"></div>
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-orange-600" />
+                  <Label className="text-base font-semibold text-orange-900">Perfil Exportador</Label>
+                  <span className="inline-flex items-center rounded-full border border-orange-200 bg-white px-2 py-0.5 text-[10px] font-bold text-orange-600 shadow-sm">
+                    PREMIUM
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground w-full md:w-[90%] leading-relaxed">
+                  Al activar esta opción, tu perfil aparecerá destacado en el <strong className="font-medium text-orange-800">catálogo internacional</strong> de exportadores.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className={`text-sm font-medium transition-colors ${form.watch("exportador") ? "text-orange-700" : "text-muted-foreground"}`}>
+                  {form.watch("exportador") ? "Activado" : "Desactivado"}
+                </span>
+                <Controller
+                  name="exportador"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Switch
+                      checked={Boolean(field.value)}
+                      onCheckedChange={(v) => { const prev = Boolean(field.value); field.onChange(v); void saveExportadorImmediate(v, prev); }}
+                      disabled={saving || savingExportador}
+                      className="data-[state=checked]:bg-orange-500"
+                    />
+                  )}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Footer Actions */}
       {!hideInternalSubmit && (
-        <SubmitButton isLoading={saving} className="w-full" loadingText="Guardando...">
-          Guardar cambios
-        </SubmitButton>
+        <div className="sticky bottom-4 z-10 mx-auto max-w-4xl rounded-xl border bg-white/80 p-4 shadow-lg backdrop-blur-sm dark:bg-slate-900/80 sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none transition-all">
+          <SubmitButton isLoading={saving} className="w-full sm:w-auto min-w-[200px] h-11 text-base shadow-md hover:shadow-lg transition-all" loadingText="Guardando cambios...">
+            Guardar Cambios
+          </SubmitButton>
+        </div>
       )}
     </form>
   );

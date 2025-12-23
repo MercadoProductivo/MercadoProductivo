@@ -39,10 +39,10 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
     try {
       const raw = localStorage.getItem("mp:notify:sound");
       if (raw != null) soundPrefRef.current = raw === "1";
-    } catch {}
+    } catch { }
   }, []);
 
-  
+
 
   // Beep simple (WebAudio) como feedback opcional
   const playBeep = useCallback(() => {
@@ -60,8 +60,8 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
       gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
       osc.start();
       osc.stop(now + 0.15);
-      setTimeout(() => { try { ctx.close(); } catch {} }, 250);
-    } catch {}
+      setTimeout(() => { try { ctx.close(); } catch { } }, 250);
+    } catch { }
   }, []);
 
   // Notificaciones nativas deshabilitadas: solo beep/toasts
@@ -74,7 +74,7 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
       const curr = map[convId] || { delta: 0, last_at: null };
       map[convId] = { delta: Math.max(0, Number(curr.delta) || 0) + 1, last_at: new Date().toISOString() };
       localStorage.setItem(PENDING_KEY, JSON.stringify(map));
-    } catch {}
+    } catch { }
   }, []);
 
   const onMessagesPage = useMemo(() => {
@@ -131,8 +131,8 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
               subject: String(c?.preview || "Nuevo mensaje"),
             }));
           if (top.length > 0) setRecent(top as any);
-        } catch {}
-      } catch {}
+        } catch { }
+      } catch { }
     }
   }, [onMessagesPage, setUnreadCount, setRecent]);
 
@@ -150,26 +150,26 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
         if (id && hid) set.add(id);
       }
       hiddenSetRef.current = set;
-    } catch {}
+    } catch { }
   }, []);
 
   // Refresco periódico global (30s) incluso si no hay sellerId (por ejemplo, compradores)
   useEffect(() => {
     if (onMessagesPage) return;
     const id = setInterval(() => {
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
     }, 30000);
-    return () => { try { clearInterval(id); } catch {} };
+    return () => { try { clearInterval(id); } catch { } };
   }, [onMessagesPage, refreshInboxSnapshot]);
 
   // Poll suave del hidden set (45s) fuera de /messages
   useEffect(() => {
     if (onMessagesPage) return;
-    try { void refreshHiddenSet(); } catch {}
+    try { void refreshHiddenSet(); } catch { }
     const id = setInterval(() => {
-      try { refreshHiddenSet(); } catch {}
+      try { refreshHiddenSet(); } catch { }
     }, 45000);
-    return () => { try { clearInterval(id); } catch {} };
+    return () => { try { clearInterval(id); } catch { } };
   }, [onMessagesPage, refreshHiddenSet]);
 
   const getCounterpartyName = useCallback(
@@ -217,24 +217,24 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
     const evt = parsed.data;
     if (onMessagesPage) {
       // En la página de mensajes, refrescamos el snapshot para reflejar cambios
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
       return;
     }
     setTimeout(() => {
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
     }, 350);
     const convId = String(evt.conversation_id || "");
     if (!convId) return;
     // Si la conversación está oculta, no notificar ni incrementar contadores
     if (hiddenSetRef.current.has(convId)) {
       // Aun así refrescar snapshot para mantener consistencia
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
       return;
     }
     // Incremento inmediato para reflejar el nuevo mensaje en el badge,
     // ya que en este canal no recibimos siempre el evento chat:message:new
-    try { bumpUnread(1); } catch {}
-    try { incPendingUnread(convId); } catch {}
+    try { bumpUnread(1); } catch { }
+    try { incPendingUnread(convId); } catch { }
     const now = Date.now();
     const last = lastToastRef.current[convId] || 0;
     if (now - last < 6000) return;
@@ -242,7 +242,7 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
     const name = await getCounterpartyName(evt);
     const body = String(evt.preview || evt.message_text || "Nuevo mensaje");
     // Notificaciones nativas deshabilitadas; usar beep simple
-    try { playBeep(); } catch {}
+    try { playBeep(); } catch { }
     try {
       const recentItem = {
         id: convId,
@@ -253,15 +253,12 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
         body: undefined as string | undefined,
       };
       prependRecent(recentItem);
-    } catch {}
+    } catch { }
     toast.custom((t) => (
-      <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md border bg-background p-3 shadow-lg">
-        <div className="flex-1 text-sm">
-          <div className="font-medium">Nuevo mensaje</div>
-          <div className="text-muted-foreground">{name}</div>
-        </div>
+      <div className="pointer-events-auto flex w-full max-w-sm items-center gap-3 rounded-md border bg-background p-3 shadow-lg">
+        <div className="flex-1 text-sm font-medium">Nuevo mensaje</div>
         <button
-          onClick={() => { try { window.location.href = messagesHref || "/dashboard/messages"; } catch {}; toast.dismiss(t); }}
+          onClick={() => { try { window.location.href = messagesHref || "/dashboard/messages"; } catch { }; toast.dismiss(t); }}
           className="inline-flex h-8 items-center rounded-md px-3 text-sm font-medium text-white"
           style={{ backgroundColor: "#f06d04" }}
         >
@@ -274,26 +271,26 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
   const onMessageNew = useCallback(async (raw: any) => {
     const parsed = MessageNewEventSchema.safeParse(raw);
     if (!parsed.success) {
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
       return;
     }
     const evt = parsed.data;
     if (onMessagesPage) {
       // Si estamos en /messages, evitar toasts pero actualizar contadores/listas
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
       return;
     }
     const convId = String(evt.conversation_id || "");
     if (!convId) {
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
       return;
     }
     // Si la conversación está oculta, no mostrar notificación ni beep ni incrementar contadores
     if (hiddenSetRef.current.has(convId)) {
-      try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+      try { refreshInboxSnapshot({ monotonic: true }); } catch { }
       return;
     }
-    try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+    try { refreshInboxSnapshot({ monotonic: true }); } catch { }
     const now = Date.now();
     const last = lastToastRef.current[convId] || 0;
     if (now - last < 6000) return;
@@ -301,9 +298,9 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
     const name = await getCounterpartyName(evt);
     const body = String(evt.preview || evt.body || "Nuevo mensaje");
     // Notificaciones nativas deshabilitadas; usar beep simple
-    try { playBeep(); } catch {}
-    try { bumpUnread(1); } catch {}
-    try { incPendingUnread(convId); } catch {}
+    try { playBeep(); } catch { }
+    try { bumpUnread(1); } catch { }
+    try { incPendingUnread(convId); } catch { }
     try {
       const recentItem = {
         id: convId,
@@ -314,7 +311,7 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
         body: undefined as string | undefined,
       };
       prependRecent(recentItem);
-    } catch {}
+    } catch { }
     toast.custom((t) => (
       <div className="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md border bg-background p-3 shadow-lg">
         <div className="flex-1 text-sm">
@@ -322,7 +319,7 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
           <div className="text-muted-foreground">{body}</div>
         </div>
         <button
-          onClick={() => { try { window.location.href = messagesHref || "/dashboard/messages"; } catch {}; toast.dismiss(t); }}
+          onClick={() => { try { window.location.href = messagesHref || "/dashboard/messages"; } catch { }; toast.dismiss(t); }}
           className="inline-flex h-8 items-center rounded-md px-3 text-sm font-medium text-white"
           style={{ backgroundColor: "#f06d04" }}
         >
@@ -339,7 +336,7 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
 
   useEffect(() => {
     if (onMessagesPage) return;
-    try { refreshInboxSnapshot({ monotonic: true }); } catch {}
+    try { refreshInboxSnapshot({ monotonic: true }); } catch { }
   }, [refreshInboxSnapshot, onMessagesPage]);
 
   useEffect(() => {
@@ -350,11 +347,11 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
         if (document.visibilityState === "visible") {
           await refreshInboxSnapshot({ monotonic: true });
         }
-      } catch {}
+      } catch { }
       timer = setTimeout(tick, 20000);
     };
     timer = setTimeout(tick, 20000);
-    return () => { try { clearTimeout(timer); } catch {} };
+    return () => { try { clearTimeout(timer); } catch { } };
   }, [sellerId, refreshInboxSnapshot]);
 
   useEffect(() => {
@@ -442,28 +439,28 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
                 ch.unbind("chat:conversation:read", onConvSimpleUpdate);
                 ch.unbind("chat:message:new", onMessageNew);
                 safeUnsubscribe(channelName);
-              } catch {}
+              } catch { }
             };
           };
 
           bindHandlers();
         });
-      } catch {}
+      } catch { }
     };
 
-    let cleanup: () => void = () => {};
+    let cleanup: () => void = () => { };
     tryInit();
 
     return () => {
-      try { if (retryTimer) clearTimeout(retryTimer); } catch {}
-      try { cleanup(); } catch {}
+      try { if (retryTimer) clearTimeout(retryTimer); } catch { }
+      try { cleanup(); } catch { }
       try {
         const locks = getPushLocks();
         const entry = locks[channelName];
         if (entry && entry.owner === currentToken) {
           entry.owner = null;
         }
-      } catch {}
+      } catch { }
     };
   }, [sellerId, onConvUpdated, onMessageNew, onConvSimpleUpdate]);
 
@@ -474,7 +471,7 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
         if (document.visibilityState === "visible" && !onMessagesPage) {
           refreshInboxSnapshot({ monotonic: true });
         }
-      } catch {}
+      } catch { }
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
@@ -485,14 +482,14 @@ export default function MessagesPush({ sellerId, messagesHref }: { sellerId?: st
     const disposeOnline = setupOutboxAutoFlush();
     const off = onConnectionStateChange((state) => {
       if (state === "connected") {
-        try { void flushOutbox(10); } catch {}
+        try { void flushOutbox(10); } catch { }
       }
     });
     // Flush inicial suave
-    try { void flushOutbox(5); } catch {}
+    try { void flushOutbox(5); } catch { }
     return () => {
-      try { off?.(); } catch {}
-      try { disposeOnline?.(); } catch {}
+      try { off?.(); } catch { }
+      try { disposeOnline?.(); } catch { }
     };
   }, []);
 

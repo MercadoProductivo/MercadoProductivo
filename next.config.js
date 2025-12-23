@@ -89,7 +89,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.pusher.com https://cdn.vercel-insights.com https://va.vercel-scripts.com https://challenges.cloudflare.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.pusher.com https://cdn.vercel-insights.com https://va.vercel-scripts.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://plus.unsplash.com https://via.placeholder.com",

@@ -2,8 +2,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { LoginInput, loginSchema } from "@/schemas/auth";
-import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
+import { FloatingLabelPasswordInput } from "@/components/ui/floating-label-password-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -93,25 +93,33 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico <span className="text-red-500">*</span></Label>
-        <Input id="email" type="email" autoComplete="email" placeholder="nombre@ejemplo.com" {...form.register("email")} {...fieldAttrs("email")} />
-        <p
-          className={`min-h-[20px] text-sm ${form.formState.errors.email ? "text-red-400" : "opacity-0"}`}
-          aria-live="polite"
-        >
-          {form.formState.errors.email?.message || " "}
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Contraseña <span className="text-red-500">*</span></Label>
-        <PasswordInput id="password" autoComplete="current-password" {...form.register("password")} {...fieldAttrs("password")} />
-        <p
-          className={`min-h-[20px] text-sm ${form.formState.errors.password ? "text-red-400" : "opacity-0"}`}
-          aria-live="polite"
-        >
-          {form.formState.errors.password?.message || " "}
-        </p>
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <FloatingLabelInput
+            id="email"
+            type="email"
+            autoComplete="email"
+            label="Correo electrónico"
+            {...form.register("email")}
+            {...fieldAttrs("email")}
+          />
+          <p className={`min-h-[20px] text-xs ${form.formState.errors.email ? "text-red-500 font-medium" : "opacity-0"}`} aria-live="polite">
+            {form.formState.errors.email?.message || " "}
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <FloatingLabelPasswordInput
+            id="password"
+            label="Contraseña"
+            autoComplete="current-password"
+            {...form.register("password")}
+            {...fieldAttrs("password")}
+          />
+          <p className={`min-h-[20px] text-xs ${form.formState.errors.password ? "text-red-500 font-medium" : "opacity-0"}`} aria-live="polite">
+            {form.formState.errors.password?.message || " "}
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

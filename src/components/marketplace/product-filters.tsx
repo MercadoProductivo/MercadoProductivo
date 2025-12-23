@@ -10,9 +10,9 @@ import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Search, Filter, X, ChevronDown, ChevronUp, 
-  MapPin, DollarSign, Package, Tag 
+import {
+  Search, Filter, X, ChevronDown, ChevronUp,
+  MapPin, DollarSign, Package, Tag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -165,7 +165,7 @@ export default function ProductFilters({
       <div className="flex flex-col sm:flex-row gap-2">
         {/* Búsqueda */}
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar productos..."
             value={filters.search}
@@ -199,7 +199,7 @@ export default function ProductFilters({
           <Filter className="h-4 w-4 mr-2" />
           Filtros
           {getActiveFiltersCount() > 0 && (
-            <Badge className="ml-2 bg-orange-500">
+            <Badge className="ml-2 bg-primary">
               {getActiveFiltersCount()}
             </Badge>
           )}
@@ -218,7 +218,7 @@ export default function ProductFilters({
                 <Filter className="h-4 w-4 mr-2" />
                 Filtros
                 {getActiveFiltersCount() > 0 && (
-                  <Badge className="ml-2 bg-orange-500">
+                  <Badge className="ml-2 bg-primary">
                     {getActiveFiltersCount()}
                   </Badge>
                 )}
@@ -272,7 +272,7 @@ export default function ProductFilters({
                     <div className="absolute z-20 mt-1 w-full rounded-md border bg-white shadow max-h-56 overflow-auto">
                       <button
                         type="button"
-                        className="w-full text-left px-2 py-1.5 hover:bg-orange-50 text-sm"
+                        className="w-full text-left px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-sm"
                         onClick={() => {
                           updateFilter("location", "all");
                           setLocationQuery("");
@@ -281,13 +281,13 @@ export default function ProductFilters({
                         Todas las ubicaciones
                       </button>
                       {locationResults.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-gray-500">No se encontraron ubicaciones</div>
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">No se encontraron ubicaciones</div>
                       ) : (
                         locationResults.map((loc) => (
                           <button
                             key={loc}
                             type="button"
-                            className="w-full text-left px-2 py-1.5 hover:bg-orange-50 text-sm"
+                            className="w-full text-left px-2 py-1.5 hover:bg-accent hover:text-accent-foreground text-sm"
                             onClick={() => {
                               updateFilter("location", loc);
                               setLocationQuery(loc);
@@ -318,7 +318,7 @@ export default function ProductFilters({
                     step={1000}
                     className="w-full"
                   />
-                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
                     <span>{formatPrice(localPriceRange[0])}</span>
                     <span>{formatPrice(localPriceRange[1])}</span>
                   </div>
@@ -344,7 +344,7 @@ export default function ProductFilters({
       </div>
 
       {/* Resumen de resultados */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className="flex items-center justify-between text-sm text-foreground/80">
         <span>
           {isLoading ? (
             "Cargando productos..."
@@ -352,7 +352,7 @@ export default function ProductFilters({
             `${totalProducts} producto${totalProducts !== 1 ? 's' : ''} encontrado${totalProducts !== 1 ? 's' : ''}`
           )}
         </span>
-        
+
         {getActiveFiltersCount() > 0 && (
           <div className="flex items-center gap-2">
             <span>Filtros activos:</span>
@@ -362,7 +362,7 @@ export default function ProductFilters({
                   &ldquo;{filters.search}&rdquo;
                   <button
                     onClick={() => updateFilter("search", "")}
-                    className="ml-1 hover:text-red-500"
+                    className="ml-1 hover:text-destructive"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -373,7 +373,7 @@ export default function ProductFilters({
                   {filters.category}
                   <button
                     onClick={() => updateFilter("category", "all")}
-                    className="ml-1 hover:text-red-500"
+                    className="ml-1 hover:text-destructive"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -384,7 +384,7 @@ export default function ProductFilters({
                   {filters.location}
                   <button
                     onClick={() => updateFilter("location", "all")}
-                    className="ml-1 hover:text-red-500"
+                    className="ml-1 hover:text-destructive"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -395,7 +395,7 @@ export default function ProductFilters({
                   Destacados
                   <button
                     onClick={() => updateFilter("onlyFeatured", false)}
-                    className="ml-1 hover:text-red-500"
+                    className="ml-1 hover:text-destructive"
                   >
                     <X className="h-3 w-3" />
                   </button>

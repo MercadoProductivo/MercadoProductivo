@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     // If not enabled, return 410 or fallback. 
     // Ideally we want to fix it, so let's assume valid config.
     // For debugging, we can log this.
-    console.log("Chat V2 Disabled by Env Var");
+
     return NextResponse.json(
       {
         error: "CHAT_DESHABILITADO",
