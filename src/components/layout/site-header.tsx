@@ -2,22 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { LogOut, MessageSquare } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { MessageSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { normalizeRoleFromMetadata } from "@/lib/auth/role";
-import { MenuActionButton } from "@/components/ui/menu-buttons";
 import { MAIN_NAV, getDashboardNav } from "@/config/navigation";
 import { useNotifications } from "@/providers/notifications-provider";
-import { Logo } from "@/components/ui/logo";
 import { PWAInstallButton } from "@/components/pwa";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -30,8 +23,6 @@ export default function SiteHeader() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userLoading, setUserLoading] = useState(true);
   const { unreadCount } = useNotifications();
-  const [accountOpen, setAccountOpen] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
 
@@ -161,25 +152,7 @@ export default function SiteHeader() {
   const role = normalizeRoleFromMetadata(user?.user_metadata || {});
   const isSeller = role === "seller";
   const accountHref = "/dashboard";
-  const accountLabel = "Perfil"
   const messagesHref = "/dashboard/messages";
-  const onMessagesPage = useMemo(() => {
-    try {
-      return pathname?.startsWith(messagesHref);
-    } catch {
-      return false;
-    }
-  }, [pathname, messagesHref]);
-
-  // Badge rojo: mostrar si hay no leídos (estado provisto por NotificationsProvider)
-
-  async function handleSignOut() {
-    // Cerrar menú antes de desloguear
-    try { setAccountOpen(false); } catch { }
-    await supabase.auth.signOut();
-    router.replace("/");
-    router.refresh();
-  }
 
   const navItems = MAIN_NAV;
 
@@ -247,72 +220,18 @@ export default function SiteHeader() {
                   </button>
                 </Link>
 
-                <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <button aria-label="Abrir menú de usuario" className="flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-[#f06d04]/10 sm:gap-2">
-                      <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
-                        <AvatarImage src={(user.user_metadata as any)?.avatar_url || (user.user_metadata as any)?.picture} alt={displayName} />
-                        <AvatarFallback>{displayName?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-                      </Avatar>
-                      <span className="hidden text-xs font-medium sm:text-sm md:inline">{displayName}</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="w-80 rounded-3xl p-0 sm:w-96"
-                    onCloseAutoFocus={(e) => e.preventDefault()}
-                  >
-                    {/* Tarjeta personalizada */}
-                    <div className="rounded-3xl bg-muted/40 p-6 text-center">
-                      {/* Avatar/logo */}
-                      <div className="mx-auto mb-4 flex items-center justify-center">
-                        <Avatar className="h-16 w-16 ring-2 ring-white/40">
-                          <AvatarImage src={(user.user_metadata as any)?.avatar_url || (user.user_metadata as any)?.picture} alt={displayName} />
-                          <AvatarFallback className="text-lg">{displayName?.[0]?.toUpperCase() || "U"}</AvatarFallback>
-                        </Avatar>
-                      </div>
-
-                      {/* Bienvenida y nombre empresa o usuario */}
-                      <div className="space-y-1">
-                        <p className="text-xs tracking-[0.35em] text-foreground/70">BIENVENIDO</p>
-                        <p className="truncate text-base font-semibold tracking-widest text-foreground">{profileName}</p>
-                      </div>
-
-                      {/* Acciones */}
-                      <div className="mt-5 flex items-center justify-center gap-4">
-                        {/* Botón MENSAJES (estilo ancla de referencia) */}
-                        <Link
-                          href={messagesHref}
-                          className="focus:outline-none"
-                          onClick={() => setAccountOpen(false)}
-                        >
-                          <MenuActionButton>
-                            Mensajes
-                          </MenuActionButton>
-                        </Link>
-
-                        {/* Botón DASHBOARD/PERFIL (mismo estilo referencia) */}
-                        <Link
-                          href={accountHref}
-                          className="focus:outline-none"
-                          onClick={() => setAccountOpen(false)}
-                        >
-                          <MenuActionButton aria-label={accountLabel}>
-                            {accountLabel}
-                          </MenuActionButton>
-                        </Link>
-                      </div>
-
-                      {/* Cerrar sesión */}
-                      <button
-                        onClick={handleSignOut}
-                        className="mx-auto mt-6 inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium tracking-[0.2em] text-foreground/80 transition-colors hover:text-foreground"
-                      >
-                        <LogOut className="h-4 w-4" /> CERRAR SESIÓN
-                      </button>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {/* Link directo al dashboard al hacer click en el nombre/avatar */}
+                <Link
+                  href={accountHref}
+                  aria-label="Ir a mi perfil"
+                  className="flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-[#f06d04]/10 sm:gap-2"
+                >
+                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
+                    <AvatarImage src={(user.user_metadata as any)?.avatar_url || (user.user_metadata as any)?.picture} alt={displayName} />
+                    <AvatarFallback>{displayName?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+                  </Avatar>
+                  <span className="hidden text-xs font-medium sm:text-sm md:inline">{displayName}</span>
+                </Link>
               </>
             ) : (
               <>
@@ -428,14 +347,6 @@ export default function SiteHeader() {
                           >
                             Ir al Dashboard
                           </Link>
-
-                          <button
-                            onClick={handleSignOut}
-                            className="flex items-center py-2 text-sm font-medium text-red-500 hover:text-red-600 text-left"
-                          >
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Cerrar Sesión
-                          </button>
                         </div>
                       ) : (
                         <div className="flex flex-col space-y-3">

@@ -1,18 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { MessageSquare } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useNotifications } from "@/providers/notifications-provider";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 import { getDashboardNav } from "@/config/navigation";
-
-
-// Navegación centralizada: provista por src/config/navigation.ts
 
 // Hook para detectar si el sidebar móvil debe estar visible
 export function useMobileSidebar() {
@@ -73,6 +70,7 @@ function SidebarNav({ onItemClick, isSeller }: { onItemClick?: () => void; isSel
 
 export default function DashboardSidebar({ initialIsSeller }: { initialIsSeller?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
   const [isSeller, setIsSeller] = useState<boolean>(!!initialIsSeller);
 
   useEffect(() => {
@@ -87,23 +85,45 @@ export default function DashboardSidebar({ initialIsSeller }: { initialIsSeller?
     return () => { mounted = false; };
   }, [supabase]);
 
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.replace("/");
+    router.refresh();
+  }
+
   return (
-    /* Sidebar solo para desktop - móvil usa el menú global */
+    /* Sidebar solo para desktop — móvil usa el menú global flotante */
     <aside className="hidden lg:flex lg:flex-col border-r bg-card/50 w-64 h-full">
       <div className="flex flex-col h-full">
+        {/* Header del sidebar */}
         <div className="flex items-center justify-center p-4 border-b">
           <h2 className="text-lg font-semibold">Panel de Control</h2>
         </div>
+
+        {/* Navegación (scrollable) */}
         <div className="flex-1 overflow-y-auto">
           <SidebarNav isSeller={isSeller} />
         </div>
-        {!isSeller && (
-          <div className="p-3 border-t">
-            <Button asChild className="w-full">
-              <Link href="/ser-vendedor">Ser vendedor</Link>
-            </Button>
+
+        {/* Sección inferior fija: CTA vendedor + cerrar sesión */}
+        <div className="border-t">
+          {!isSeller && (
+            <div className="p-3">
+              <Button asChild className="w-full">
+                <Link href="/ser-vendedor">Ser vendedor</Link>
+              </Button>
+            </div>
+          )}
+          <div className="p-3">
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
+            >
+              <LogOut size={16} className="shrink-0" />
+              Cerrar sesión
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </aside>
   );
