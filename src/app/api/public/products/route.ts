@@ -144,7 +144,7 @@ export async function GET(req: NextRequest) {
 
       // Obtener planes de los vendedores y calcular límites por plan
       if (items.length > 0) {
-        const userIdsAll = Array.from(new Set(items.map((p: any) => p.user_id)));
+        const userIdsAll = Array.from(new Set(items.map((p: any) => p.user_id).filter(Boolean))) as string[];
         const { data: sellerProfiles } = await supabase
           .from("profiles")
           .select("id, plan_code, first_name, last_name, city, province, company")
@@ -174,7 +174,9 @@ export async function GET(req: NextRequest) {
         // Fisher-Yates shuffle
         for (let i = items.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
-          [items[i], items[j]] = [items[j], items[i]];
+          const temp = items[i] as any;
+          items[i] = items[j] as any;
+          items[j] = temp;
         }
 
         // Aplicar límites por vendedor
@@ -229,7 +231,7 @@ export async function GET(req: NextRequest) {
 
           withImages = limited.map((p: any) => ({
             ...p,
-            primaryImageUrl: firstImageByProduct.get(p.id) ?? null,
+            primaryImageUrl: firstImageByProduct.get(p.id as string) ?? null,
             profiles: profileById.get(p.user_id) || {},
           }));
         }
@@ -271,7 +273,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Cargar perfiles de los vendedores para conocer los límites por plan
-    const userIdsAll = Array.from(new Set(candidates.map((p) => p.user_id)));
+    const userIdsAll = Array.from(new Set(candidates.map((p) => p.user_id).filter(Boolean))) as string[];
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, plan_code, first_name, last_name, city, province, company")
@@ -341,9 +343,9 @@ export async function GET(req: NextRequest) {
 
     const withImages = pageItems.map((p) => ({
       ...p,
-      primaryImageUrl: firstImageByProduct.get(p.id) ?? null,
+      primaryImageUrl: firstImageByProduct.get(p.id as string) ?? null,
       profiles: (() => {
-        const prof = profileById.get(p.user_id) || {};
+        const prof = profileById.get(p.user_id as string) || {};
         return {
           first_name: prof.first_name,
           last_name: prof.last_name,

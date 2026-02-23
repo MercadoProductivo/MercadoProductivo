@@ -78,7 +78,7 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
       const { data } = await supabase
         .from("profiles")
         .select("full_name, first_name, last_name")
-        .eq("id", user.id)
+        .eq("id", user!.id)
         .maybeSingle();
 
       if (!isActive) return;
@@ -104,7 +104,7 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
     "Usuario";
 
   // Rol normalizado: preferir valor inicial pasado desde el servidor para evitar flicker
-  const roleRaw = (user?.user_metadata?.role || (user as any)?.user_type || (user as any)?.user_metadata?.user_type || "").toString();
+  const roleRaw = (user?.user_metadata?.role_code || "").toString();
   const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
   const isSeller = typeof initialIsSeller === "boolean" ? initialIsSeller : roleNormalized === "seller";
   const messagesHref = "/dashboard/messages";

@@ -23,7 +23,7 @@ export const MenuActionButton = React.forwardRef<
         "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium",
         "transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
         "disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
-        "shadow-sm hover:text-accent-foreground h-8 rounded-md px-3 text-xs min-w-[80px]",
+        "shadow-sm h-8 rounded-md px-3 text-xs min-w-[80px]",
         "bg-white text-[#f06d04] border border-[#f06d04] hover:bg-[#f06d04]/10",
         className
       )}

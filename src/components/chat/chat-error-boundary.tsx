@@ -31,7 +31,7 @@ export class ChatErrorBoundary extends React.Component<
         return { hasError: true, error };
     }
 
-    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
         console.error("[ChatErrorBoundary] Error caught:", error, errorInfo);
         this.props.onError?.(error, errorInfo);
     }
@@ -41,7 +41,7 @@ export class ChatErrorBoundary extends React.Component<
         this.props.onReset?.();
     };
 
-    render() {
+    override render() {
         if (this.state.hasError) {
             if (this.props.fallback) {
                 return this.props.fallback;

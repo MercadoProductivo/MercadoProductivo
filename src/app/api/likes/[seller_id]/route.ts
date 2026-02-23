@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -74,8 +74,8 @@ export async function POST(_req: Request, ctx: { params: Promise<{ seller_id: st
     }
 
     // Verificar que el perfil objetivo es Plus/Deluxe (o sinónimos)
-    const admin = createAdminClient();
-    const { data: profile, error: profErr } = await admin
+    // RLS: User can read other profiles if public, or at least plan_code
+    const { data: profile, error: profErr } = await supabase
       .from("profiles")
       .select("plan_code")
       .eq("id", sellerId)
@@ -89,7 +89,8 @@ export async function POST(_req: Request, ctx: { params: Promise<{ seller_id: st
 
     // Asegurar que el perfil del usuario que da like exista para no violar FK
     {
-      const { error: ensureErr } = await admin
+      // Using supabase (Route Client) allows upserting own profile
+      const { error: ensureErr } = await supabase
         .from("profiles")
         .upsert({ id: user.id }, { onConflict: "id" });
       if (ensureErr) {

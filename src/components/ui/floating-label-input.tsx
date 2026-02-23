@@ -18,6 +18,7 @@ const FloatingLabelInput = React.forwardRef<HTMLInputElement, FloatingLabelInput
             <div className="relative">
                 <Input
                     id={inputId}
+                    aria-label={label}
                     placeholder=" " // Placeholder vacío necesario para el selector :placeholder-shown
                     className={cn(
                         "peer pt-6 pb-2 h-12", // Ajuste de padding para dejar espacio al label

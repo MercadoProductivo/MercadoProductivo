@@ -33,7 +33,7 @@ function writeOutbox(items: OutboxItem[]): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(OUTBOX_KEY, JSON.stringify(items));
-  } catch {}
+  } catch { }
 }
 
 function genId(): string {
@@ -92,8 +92,7 @@ export async function flushOutbox(maxPerFlush = 10): Promise<number> {
   if (items.length === 0) return 0;
 
   const remaining: OutboxItem[] = [];
-  for (let i = 0; i < items.length; i++) {
-    const it = items[i];
+  for (const it of items) {
     if (okCount >= maxPerFlush) {
       remaining.push(it);
       continue;
@@ -145,9 +144,9 @@ export async function flushOutbox(maxPerFlush = 10): Promise<number> {
 }
 
 export function setupOutboxAutoFlush(): () => void {
-  if (typeof window === "undefined") return () => {};
+  if (typeof window === "undefined") return () => { };
   const onOnline = async () => {
-    try { await flushOutbox(10); } catch {}
+    try { await flushOutbox(10); } catch { }
   };
   window.addEventListener("online", onOnline);
   return () => window.removeEventListener("online", onOnline);

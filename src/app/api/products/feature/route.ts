@@ -109,7 +109,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Tu plan actual no permite destacar productos" }, { status: 403 });
     }
 
-    const { data, error } = await supabase.rpc("sp_feature_product", {
+    const { data, error } = await supabase.rpc("sp_feature_product" as any, {
       p_product: productId,
       p_days: days,
       // p_cost es opcional: el costo por día se determina en el servidor según el plan
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
+    const row = Array.isArray(data) ? data[0] : (data as any);
     return NextResponse.json({
       remainingCredits: row?.remaining_credits ?? null,
       featuredUntil: row?.featured_until ?? null,

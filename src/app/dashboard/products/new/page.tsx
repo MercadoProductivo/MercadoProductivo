@@ -98,7 +98,7 @@ export default async function NewProductPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Link href="/planes" className="text-primary underline">Ver planes</Link>
+                  <Link href="/plans" className="text-primary underline">Ver planes</Link>
                 </CardContent>
               </Card>
             </section>

@@ -55,9 +55,8 @@ export function ProductGallery({ images, title, className }: Props) {
                 <button
                   type="button"
                   onClick={() => setIndex(idx)}
-                  className={`relative aspect-square w-12 overflow-hidden rounded-md border border-gray-200 bg-white p-1 mx-0.5 ${
-                    idx === index ? "ring-2 ring-orange-500 border-orange-200" : "hover:ring-1 hover:ring-gray-300"
-                  }`}
+                  className={`relative aspect-square w-12 overflow-hidden rounded-md border border-gray-200 bg-white p-1 mx-0.5 ${idx === index ? "ring-2 ring-orange-500 border-orange-200" : "hover:ring-1 hover:ring-gray-300"
+                    }`}
                 >
                   <div className="relative h-full w-full rounded-sm bg-white">
                     <Image
@@ -104,9 +103,8 @@ export function ProductGallery({ images, title, className }: Props) {
               key={idx}
               type="button"
               onClick={() => setIndex(idx)}
-              className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white p-1 mx-1 ${
-                idx === index ? "ring-2 ring-orange-500 border-orange-200" : "hover:ring-1 hover:ring-gray-300"
-              }`}
+              className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-white p-1 mx-1 ${idx === index ? "ring-2 ring-orange-500 border-orange-200" : "hover:ring-1 hover:ring-gray-300"
+                }`}
             >
               <div className="relative h-full w-full rounded-sm bg-white">
                 <Image
@@ -132,7 +130,7 @@ export function ProductGallery({ images, title, className }: Props) {
           <div className="relative w-full" style={{ minHeight: "50vh" }}>
             {hasAny && (
               <Image
-                src={imgs[index]}
+                src={imgs[index] || ""}
                 alt={`${title} preview ${index + 1}`}
                 fill
                 className="rounded bg-black object-contain"

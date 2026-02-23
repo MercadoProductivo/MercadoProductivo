@@ -11,7 +11,7 @@ export type NavIcon = ComponentType<{ size?: number | string; className?: string
 export type NavItem = {
   label: string;
   href: string;
-  icon?: NavIcon;
+  icon: NavIcon;
 };
 
 // Navegación principal (top nav / header)
@@ -20,7 +20,7 @@ export const MAIN_NAV: NavItem[] = [
   { label: "Servicios", href: "/services", icon: MdHomeRepairService },
   { label: "Vendedores", href: "/vendedores", icon: MdStore },
   { label: "Exportadores", href: "/exportadores", icon: FaPlaneDeparture },
-  { label: "Planes", href: "/planes", icon: MdCreditCard },
+  { label: "Planes", href: "/plans", icon: MdCreditCard },
 ];
 
 // Navegación del dashboard para vendedores

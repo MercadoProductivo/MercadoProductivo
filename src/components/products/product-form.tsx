@@ -316,7 +316,7 @@ export default function ProductForm({ missingLabels = [] }: ProductFormProps) {
       )}
       {limitReached && (
         <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 sm:text-sm">
-          Alcanzaste el máximo de {maxProducts ?? 0} productos. <a href="/planes" className="ml-2 underline hover:text-orange-800">Ver planes</a>
+          Alcanzaste el máximo de {maxProducts ?? 0} productos. <a href="/plans" className="ml-2 underline hover:text-orange-800">Ver planes</a>
         </div>
       )}
 

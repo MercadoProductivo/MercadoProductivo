@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -56,8 +56,8 @@ export async function POST(_req: Request, ctx: { params: Promise<{ product_id: s
       return NextResponse.json({ error: "UNAUTHORIZED", message: "Debe iniciar sesión para dar like" }, { status: 401 });
     }
 
-    const admin = createAdminClient();
-    const { data: product, error: prodErr } = await admin
+    // Verify product exists and check ownership (RLS should allow reading public products)
+    const { data: product, error: prodErr } = await supabase
       .from("products")
       .select("id,user_id")
       .eq("id", productId)

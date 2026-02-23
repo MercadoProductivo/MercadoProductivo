@@ -36,7 +36,7 @@ export async function POST() {
         .from("product_images")
         .update({ url: newUrl })
         .eq("id", row.id)
-        .eq("product_id", row.product_id);
+        .eq("product_id", row.product_id as string);
       if (!updError) updated++;
     }
   }

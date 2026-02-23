@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     for (const pref of desiredPrefixes) {
       const idx = remaining.findIndex((f) => f.name.toLowerCase().startsWith(pref.toLowerCase()));
       if (idx !== -1) {
-        selected.push(remaining[idx]);
+        selected.push(remaining[idx]!);
         remaining.splice(idx, 1);
       }
       if (selected.length >= limit) break;

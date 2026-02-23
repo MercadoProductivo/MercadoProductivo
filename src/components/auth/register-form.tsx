@@ -119,7 +119,7 @@ export default function RegisterForm() {
           data: {
             role: values.userType,
             full_name: `${values.firstName} ${values.lastName}`.trim(),
-            user_type: values.userType,
+            role_code: values.userType === "seller" ? "vendedor" : "comprador",
             first_name: values.firstName,
             last_name: values.lastName,
             ...(values.userType === "seller"
@@ -233,6 +233,7 @@ export default function RegisterForm() {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
+            aria-label="Tipo de cuenta: Comprador"
             onClick={() => form.setValue("userType", "buyer")}
             className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition ${userType === "buyer"
               ? "border-orange-500 bg-orange-500 text-white shadow-sm"
@@ -243,6 +244,7 @@ export default function RegisterForm() {
           </button>
           <button
             type="button"
+            aria-label="Tipo de cuenta: Vendedor"
             onClick={() => form.setValue("userType", "seller")}
             className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm transition ${userType === "seller"
               ? "border-orange-500 bg-orange-500 text-white shadow-sm"
@@ -261,6 +263,7 @@ export default function RegisterForm() {
         <div className="flex items-center gap-2">
           <Checkbox
             id="terms"
+            aria-label="Acepto los términos y condiciones"
             checked={form.watch("acceptTerms")}
             onCheckedChange={(c) =>
               form.setValue("acceptTerms", c === true, {

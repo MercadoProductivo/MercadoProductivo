@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +31,7 @@ function formatCurrency(amount: number, currency: string = "ARS", locale: string
   } catch {
     const sign = amount < 0 ? "-" : "";
     const n = Math.abs(amount);
-    const [intPart, decPart] = n.toFixed(2).split(".");
+    const [intPart = "0", decPart = "00"] = n.toFixed(2).split(".");
     const intWithThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     return `${sign}${currency} ${intWithThousands},${decPart}`;
   }
@@ -146,8 +146,7 @@ export default async function SuccessPage({ searchParams }: Props) {
   // Obtener lista de planes (usando Supabase admin directamente para evitar 403 en SSR)
   let plans: any[] = [];
   try {
-    const adminSupabase = createAdminClient();
-    const { data } = await adminSupabase
+    const { data } = await supabase
       .from("plans")
       .select("code, name, price_monthly_cents, price_monthly, price_yearly_cents, price_yearly, currency")
       .order("code", { ascending: true });
@@ -193,7 +192,7 @@ export default async function SuccessPage({ searchParams }: Props) {
                 <Link href="/dashboard">Ir al Dashboard</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href="/planes" prefetch={false}>
+                <Link href="/plans" prefetch={false}>
                   Ver otros planes
                   <ArrowRight className="ml-1.5 h-4 w-4" />
                 </Link>

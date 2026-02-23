@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { Database } from "@/types/database.types";
 
 // Cliente de administrador (Service Role). USO EXCLUSIVO EN SERVIDOR.
 // Requiere variables de entorno:
@@ -14,7 +15,7 @@ export function createAdminClient() {
     );
     throw new Error("CONFIG_ERROR_SUPABASE_ADMIN_ENV");
   }
-  return createClient(url, serviceKey, {
+  return createClient<Database>(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

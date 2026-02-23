@@ -6,6 +6,7 @@ import { getMPConfig, validatePayerEmail } from "@/lib/mercadopago/config";
 import { checkRateLimit } from "@/lib/rate-limit-kv";
 import { BillingService } from "@/lib/services/billing";
 import { logger } from "@/lib/logger";
+import { toNum, computeMonthlyPrice, computeYearlyPrice } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
     // Cargar plan (incluye columnas opcionales de precio/moneda)
     const { data: plan, error: planErr } = await admin
       .from("plans")
-      .select("code, name, currency, price_monthly, price_monthly_cents, price_yearly, price_yearly_cents")
+      .select("code, name, currency, price_monthly_cents, price_yearly_cents")
       .eq("code", planCode)
       .maybeSingle();
     if (planErr || !plan) {
@@ -97,28 +98,11 @@ export async function POST(req: Request) {
       }
     }
 
-    const toNum = (v: any): number | null => {
-      if (typeof v === "number" && Number.isFinite(v)) return v;
-      if (typeof v === "string" && v.trim().length > 0) {
-        const n = Number(v);
-        return Number.isFinite(n) ? n : null;
-      }
-      return null;
-    };
-    const pm = toNum((plan as any).price_monthly);
-    const pmc = toNum((plan as any).price_monthly_cents);
-    const py = toNum((plan as any).price_yearly);
-    const pyc = toNum((plan as any).price_yearly_cents);
-    const priceMonthly = pm != null ? pm : (pmc != null ? pmc / 100 : 0);
-    const priceYearly = py != null ? py : (pyc != null ? pyc / 100 : null);
+    // Cálculo de precios usando utilidades centralizadas
+    const priceMonthly = computeMonthlyPrice(plan as any);
+    const priceYearly = computeYearlyPrice(plan as any);
     const isYearly = interval === "yearly";
-    // Monto anual defensivo: si price_yearly es nulo o menor/igual al mensual (configuración errónea), usar mensual*12
-    const yearlyByMonths = priceMonthly > 0 ? priceMonthly * 12 : 0;
-    const selectedPrice = isYearly
-      ? (priceMonthly > 0 && (priceYearly == null || priceYearly <= priceMonthly + 0.01)
-        ? yearlyByMonths
-        : (priceYearly ?? yearlyByMonths))
-      : priceMonthly;
+    const selectedPrice = isYearly ? priceYearly : priceMonthly;
     const amountRounded = Math.round(selectedPrice * 100) / 100;
     const currency = ((plan as any).currency || "ARS").toUpperCase();
 
@@ -134,12 +118,11 @@ export async function POST(req: Request) {
     if (profile?.plan_code) {
       const { data: currentPlan } = await admin
         .from("plans")
-        .select("code, price_monthly, price_monthly_cents")
+        .select("code, price_monthly_cents")
         .eq("code", profile.plan_code)
         .maybeSingle();
-      const cpm = toNum((currentPlan as any)?.price_monthly);
       const cpmc = toNum((currentPlan as any)?.price_monthly_cents);
-      currentMonthlyPrice = cpm != null ? cpm : (cpmc != null ? cpmc / 100 : null);
+      currentMonthlyPrice = cpmc != null ? cpmc / 100 : null;
     }
     const hasAuthorizedCurrent = !!(profile as any)?.mp_preapproval_id && ((profile as any)?.mp_subscription_status === "authorized");
     const isDowngrade = (currentMonthlyPrice != null) && (currentMonthlyPrice > priceMonthly);

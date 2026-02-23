@@ -109,7 +109,7 @@ export default function ChatMessages({ items, lastReadAt }: { items: ChatItem[];
                   "relative max-w-[75%] rounded-2xl px-4 py-2.5 text-[14px] leading-relaxed transition-all duration-200",
                   "shadow-sm hover:shadow-md",
                   it.type === "incoming"
-                    ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-bl-md"
+                    ? "bg-white text-slate-800 border border-slate-200 rounded-bl-md"
                     : "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-br-md",
                   it.sending && "opacity-70"
                 )}
@@ -117,7 +117,7 @@ export default function ChatMessages({ items, lastReadAt }: { items: ChatItem[];
               >
                 {/* Nombre del remitente (solo para entrantes y no consecutivos) */}
                 {it.type === "incoming" && it.sender_name && !isConsecutive && (
-                  <div className="mb-1 text-[11px] font-semibold text-orange-600 dark:text-orange-400">
+                  <div className="mb-1 text-[11px] font-semibold text-orange-600">
                     {it.sender_name}
                   </div>
                 )}
@@ -129,7 +129,7 @@ export default function ChatMessages({ items, lastReadAt }: { items: ChatItem[];
                 <div className={cn(
                   "mt-1.5 flex items-center justify-end gap-1.5 text-[10px]",
                   it.type === "incoming"
-                    ? "text-slate-400 dark:text-slate-500"
+                    ? "text-slate-500"
                     : "text-white/70"
                 )}>
                   <span>

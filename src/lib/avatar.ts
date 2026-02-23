@@ -6,7 +6,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
  */
 export function normalizeAvatarUrl(
     raw: string | null | undefined,
-    supabase?: SupabaseClient | null
+    supabase?: SupabaseClient<any, any, any> | null
 ): string | null {
     if (!raw) return null;
     const s = String(raw).trim();
@@ -55,7 +55,7 @@ export function getAvatarInitials(
     if (name) {
         const parts = name.trim().split(/\s+/);
         if (parts.length >= 2) {
-            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            return ((parts[0]?.[0] || "") + (parts[parts.length - 1]?.[0] || "")).toUpperCase();
         }
         return (parts[0]?.[0] || "U").toUpperCase();
     }

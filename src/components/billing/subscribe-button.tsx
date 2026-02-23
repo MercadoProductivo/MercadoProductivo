@@ -15,12 +15,12 @@ type SubscribeButtonProps = {
   children: React.ReactNode;
   className?: string;
   variant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
+  | "default"
+  | "destructive"
+  | "outline"
+  | "secondary"
+  | "ghost"
+  | "link";
   size?: "default" | "sm" | "lg" | "icon";
 };
 
@@ -44,7 +44,7 @@ export function SubscribeButton({ code, interval, children, className, variant =
       const json = await res.json().catch(() => ({}));
 
       if (res.status === 401) {
-        const next = `/planes?interval=${encodeURIComponent(interval)}`;
+        const next = `/plans?interval=${encodeURIComponent(interval)}`;
         window.location.href = `/auth/login?next=${encodeURIComponent(next)}`;
         return;
       }
@@ -105,7 +105,7 @@ export function SubscribeButton({ code, interval, children, className, variant =
         return;
       }
       const { error: updErr } = await supabase.auth.updateUser({
-        data: { role: "seller", user_type: "anunciante" },
+        data: { role_code: "vendedor" },
       });
       if (updErr) throw updErr;
 
@@ -122,9 +122,9 @@ export function SubscribeButton({ code, interval, children, className, variant =
             .from("profiles")
             .upsert({ id: user.id, plan_code: "free", updated_at: new Date().toISOString() }, { onConflict: "id" });
         }
-      } catch {}
+      } catch { }
 
-      try { window.dispatchEvent(new CustomEvent("profile:updated", { detail: { role: "seller" } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent("profile:updated", { detail: { role: "seller" } })); } catch { }
       toast.success("Tu perfil ahora es de vendedor");
       setShowBuyerModal(false);
       await performSubscribe();

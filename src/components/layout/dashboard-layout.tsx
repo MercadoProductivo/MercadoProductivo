@@ -7,12 +7,12 @@ export default function DashboardLayout({ children, initialIsSeller }: { childre
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar initialIsSeller={initialIsSeller} />
-      <main className="flex-1 lg:ml-0">
+      <div className="flex-1 lg:ml-0">
         {/* Espaciado superior para el botón hamburguesa en móvil */}
         <div className="pt-16 lg:pt-0">
           {children}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

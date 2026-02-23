@@ -10,7 +10,7 @@ export function mimeToExt(mime?: string, fallbackName?: string): string {
   if (mime && map[mime]) return map[mime];
   if (fallbackName) {
     const m = fallbackName.toLowerCase().match(/\.([a-z0-9]{2,5})$/);
-    if (m) return m[1];
+    if (m) return m[1] || "jpg";
   }
   return "jpg"; // default razonable
 }
@@ -47,7 +47,7 @@ export function pathFromPublicUrl(url: string): string | null {
   }
   if (!after) return null;
   // Remover posibles querystrings
-  const withoutQs = after.split("?")[0];
+  const withoutQs = after.split("?")[0] || ""; // Fix possible undefined
   // Estructura esperada: "<bucket>/<object-path>"
   const firstSlash = withoutQs.indexOf("/");
   if (firstSlash === -1) return null;

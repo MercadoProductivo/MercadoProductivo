@@ -51,19 +51,19 @@ export default function EmojiPicker({ onEmojiSelect, disabled, className }: Emoj
                 </Button>
             </PopoverTrigger>
             <PopoverContent
-                className="w-[320px] p-0 shadow-xl"
+                className="w-[320px] sm:w-[360px] p-0 shadow-xl"
                 side="top"
                 align="start"
                 sideOffset={8}
             >
                 {/* Tabs de categorías */}
-                <div className="flex gap-1 border-b p-2">
+                <div className="flex gap-1 overflow-x-auto scrollbar-none border-b p-2 pb-2">
                     {categories.map((cat) => (
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
                             className={cn(
-                                "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                                "flex-shrink-0 whitespace-nowrap rounded-md px-2 py-1 text-xs font-medium transition-colors",
                                 activeCategory === cat
                                     ? "bg-primary text-primary-foreground"
                                     : "text-muted-foreground hover:bg-muted"

@@ -3,13 +3,12 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import AppShell from "@/components/layout/app-shell";
 import GlobalMobileMenu from "@/components/layout/global-mobile-menu";
-import { createClient } from "@/lib/supabase/server";
-import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 import NotificationsProvider from "@/providers/notifications-provider";
+import { QueryProvider } from "@/providers/query-provider";
 
 export const metadata: Metadata = {
   title: {
@@ -57,37 +56,36 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const inter = Inter({ subsets: ["latin"] });
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-export const revalidate = 0;
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Calcular rol del usuario en el servidor para evitar parpadeos en móvil
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const initialIsSeller = !!(user && normalizeRoleFromMetadata(user.user_metadata || {}) === "seller");
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Layout raíz estático (sin bloqueo de auth)
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`antialiased ${inter.className} w-full bg-background text-foreground`}>
+      <body className={`antialiased ${jakarta.className} w-full bg-background text-foreground`}>
         <SpeedInsights />
-        <ThemeProvider>
-          <NotificationsProvider>
-            <AppShell>
-              {children}
-              <GlobalMobileMenu initialIsSeller={initialIsSeller} />
-            </AppShell>
-            {/* Toaster mobile: arriba a la derecha, con offset para no tapar el header */}
-            <div className="sm:hidden">
-              <Toaster richColors theme="light" position="top-right" offset={96} />
-            </div>
-            {/* Toaster desktop: abajo a la derecha */}
-            <div className="hidden sm:block">
-              <Toaster richColors theme="light" position="bottom-right" offset={24} />
-            </div>
-          </NotificationsProvider>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <NotificationsProvider>
+              <AppShell>
+                <>
+                  {children}
+                  <GlobalMobileMenu />
+                </>
+              </AppShell>
+              {/* Toaster mobile: arriba a la derecha, con offset para no tapar el header */}
+              <div className="sm:hidden">
+                <Toaster richColors theme="light" position="top-right" offset={96} />
+              </div>
+              {/* Toaster desktop: abajo a la derecha */}
+              <div className="hidden sm:block">
+                <Toaster richColors theme="light" position="bottom-right" offset={24} />
+              </div>
+            </NotificationsProvider>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -19,7 +19,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sincroniza la cookie de sesión de Supabase en cliente */}
       <SupabaseListener />
       {/* Forzar scroll al tope en cambios de ruta */}
-      <ScrollToTop />
+      <React.Suspense fallback={null}>
+        <ScrollToTop />
+      </React.Suspense>
       {!isAuth && <SiteHeader />}
       <main key={pathname} className="flex-1 w-full">
         {children}

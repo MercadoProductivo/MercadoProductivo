@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,40 +33,43 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: product } = await supabase
-      .from("products")
-      .select("id,title,description")
-      .eq("id", id)
-      .single();
+
+    // ✅ Paralelizar queries en generateMetadata
+    const [
+      { data: product },
+      { data: gallery },
+    ] = await Promise.all([
+      supabase
+        .from("products")
+        .select("id,title,description")
+        .eq("id", id)
+        .single(),
+      supabase
+        .from("product_images")
+        .select("url,id")
+        .eq("product_id", id)
+        .order("id", { ascending: true })
+        .limit(1),
+    ]);
+
     if (!product) return {};
 
-    // Buscar primera imagen
-    const { data: gallery } = await supabase
-      .from("product_images")
-      .select("url,id")
-      .eq("product_id", product.id)
-      .order("id", { ascending: true });
-    const image = (gallery || []).find((g: any) => g?.url)?.url as string | undefined;
-
-    const hdrs = await headers();
-    const host = hdrs.get("x-forwarded-host") || hdrs.get("host");
-    const proto = hdrs.get("x-forwarded-proto") || "http";
-    const baseUrl = host ? `${proto}://${host}` : "";
-    const url = `${baseUrl}/products/${product.id}`;
+    const image = gallery?.[0]?.url as string | undefined;
+    const url = `/products/${product.id}`;
 
     return {
       title: product.title,
       description: product.description,
       openGraph: {
         title: product.title,
-        description: product.description,
+        description: product.description ?? undefined,
         url,
         images: image ? [{ url: image, width: 1200, height: 630 }] : undefined,
       },
       twitter: {
         card: image ? "summary_large_image" : "summary",
         title: product.title,
-        description: product.description,
+        description: product.description ?? undefined,
         images: image ? [image] : undefined,
       },
     };
@@ -81,18 +83,29 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
   if (!id) notFound();
 
   const supabase = await createClient();
-  const { data: product, error } = await supabase
-    .from("products")
-    .select(
-      "id,title,description,price,category,location,quantity_value,quantity_unit,featured_until,created_at,user_id"
-    )
-    .eq("id", id)
-    .eq("published", true)
-    .single();
 
-  if (error || !product) {
-    // Consola en server para depurar rápidamente si hiciera falta
-    console.error("PublicProductPage product fetch error", error);
+  // ✅ Paralelizar queries para mejor performance
+  const [
+    { data: product, error: productError },
+    { data: gallery },
+  ] = await Promise.all([
+    supabase
+      .from("products")
+      .select(
+        "id,title,description,price,category,location,quantity_value,quantity_unit,featured_until,created_at,user_id"
+      )
+      .eq("id", id)
+      .eq("published", true)
+      .single(),
+    supabase
+      .from("product_images")
+      .select("url,id")
+      .eq("product_id", id)
+      .order("id", { ascending: true }),
+  ]);
+
+  if (productError || !product) {
+    console.error("PublicProductPage product fetch error", productError);
     notFound();
   }
 
@@ -105,47 +118,39 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
     : Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(Number(product.price));
 
   const qty = `${Number(product.quantity_value)} ${product.quantity_unit}`;
-  const createdAt = new Date(product.created_at).toLocaleDateString("es-ES", {
+  const createdAt = new Date(product.created_at as string).toLocaleDateString("es-ES", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 
-  // Cargar imágenes del producto
-  const { data: gallery } = await supabase
-    .from("product_images")
-    .select("url,id")
-    .eq("product_id", product.id)
-    .order("id", { ascending: true });
   const images = (gallery || []).map((g: any) => g.url as string);
 
-  // Cargar perfil del vendedor desde endpoint público para mantener consistencia
-  const hdrs = await headers();
-  const host = hdrs.get("x-forwarded-host") || hdrs.get("host");
-  const proto = hdrs.get("x-forwarded-proto") || "http";
-  const baseUrl = host ? `${proto}://${host}` : "";
-  let seller: any = null;
-  try {
-    const res = await fetch(`${baseUrl}/api/public/sellers/${product.user_id}`, { cache: "no-store" });
-    if (res.ok) {
-      const payload = await res.json();
-      seller = payload?.seller || null;
-    }
-  } catch (e) {
-    console.error("Failed to fetch seller info", e);
-  }
+  // ✅ Paralelizar queries del vendedor y productos relacionados
+  const [
+    { data: seller },
+    { data: also },
+  ] = await Promise.all([
+    // Query directa al perfil en vez de HTTP fetch
+    supabase
+      .from("profiles")
+      .select(
+        "id,first_name,last_name,full_name,company,city,province,avatar_url,phone,plan_code,updated_at"
+      )
+      .eq("id", product.user_id as string)
+      .maybeSingle(),
+    // Productos del mismo vendedor
+    supabase
+      .from("products")
+      .select("id,title,price,quantity_unit,category")
+      .eq("user_id", product.user_id as string)
+      .eq("published", true)
+      .neq("id", product.id as string)
+      .order("created_at", { ascending: false })
+      .limit(12),
+  ]);
 
-  // Cargar productos del mismo vendedor (excluyendo el actual) para el carrusel
-  const { data: also } = await supabase
-    .from("products")
-    .select("id,title,price,quantity_unit,category")
-    .eq("user_id", product.user_id)
-    .eq("published", true)
-    .neq("id", product.id)
-    .order("created_at", { ascending: false })
-    .limit(12);
-
-  // Cargar primera imagen por producto (cover)
+  // Cargar imágenes de productos relacionados
   let relatedItems: Array<{
     id: string;
     title: string;
@@ -154,6 +159,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
     category: string;
     product_images?: { url: string }[];
   }> = [];
+
   if (also && also.length > 0) {
     const ids = also.map((p: any) => p.id);
     const { data: pics } = await supabase
@@ -161,6 +167,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
       .select("product_id,url,id")
       .in("product_id", ids)
       .order("id", { ascending: true });
+
     const coverById = new Map<string, string>();
     for (const row of pics || []) {
       const pid = String((row as any).product_id);
@@ -168,6 +175,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
         coverById.set(pid, String(row.url));
       }
     }
+
     relatedItems = also.map((p: any) => ({
       id: p.id,
       title: p.title,
@@ -209,7 +217,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
               <ProductShareButton
                 productId={product.id}
                 productTitle={product.title}
-                sellerId={product.user_id}
+                sellerId={product.user_id as string}
                 size="sm"
               />
             </div>
@@ -246,22 +254,22 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
 
           {/* Perfil del vendedor */}
           {seller && <SellerInfoCard productTitle={product.title} seller={{
-            id: product.user_id,
+            id: product.user_id as string,
             first_name: seller.first_name ?? null,
             last_name: seller.last_name ?? null,
             full_name: seller.full_name ?? null,
             company: seller.company ?? null,
             city: seller.city ?? null,
             province: seller.province ?? null,
-            location: seller.location ?? null,
+            location: (seller.city && seller.province) ? `${seller.city}, ${seller.province}` : (seller.city || seller.province || null),
             avatar_url: seller.avatar_url ?? null,
             phone: seller.phone ?? null,
-            created_at: seller.created_at ?? null,
-            joined_at: seller.joined_at ?? null,
+            created_at: seller.updated_at ?? null,
+            joined_at: seller.updated_at ?? null,
             plan_code: seller.plan_code ?? null,
-            plan_label: seller.plan_label ?? (seller.plan_code || "Básico"),
-            products_count: seller.products_count ?? 0,
-            likes_count: seller.likes_count ?? 0,
+            plan_label: seller.plan_code || "Básico",
+            products_count: 0,
+            likes_count: 0,
           }} />}
 
           {/* CTA opcionales, como contactar al vendedor, pueden añadirse aquí en el futuro */}
@@ -276,7 +284,7 @@ export default async function PublicProductPage({ params }: { params: Promise<{ 
       )}
 
       {/* Productos similares */}
-      <SimilarProducts category={product.category} excludeProductId={product.id} excludeSellerId={product.user_id} />
+      <SimilarProducts category={product.category as string} excludeProductId={product.id as string} excludeSellerId={product.user_id as string} />
 
     </div>
   );

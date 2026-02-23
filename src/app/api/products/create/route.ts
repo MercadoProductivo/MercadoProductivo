@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import { getNormalizedRoleFromUser } from "@/lib/auth/role";
 import { z } from "zod";
 
@@ -18,7 +18,7 @@ const productPayloadSchema = z.object({
 
 export async function POST(req: Request) {
     try {
-        const supabase = await createRouteClient();
+        const supabase: any = await createRouteClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
@@ -50,11 +50,8 @@ export async function POST(req: Request) {
 
         const { title, description, category, price, quantity_value, quantity_unit, location } = validation.data;
 
-        // Usar cliente Admin para bypass de RLS
-        const admin = createAdminClient();
-
         // Verificar límite del plan
-        const { data: profile } = await admin
+        const { data: profile } = await supabase
             .from("profiles")
             .select("plan_code")
             .eq("id", user.id)
@@ -63,7 +60,7 @@ export async function POST(req: Request) {
         const planCode = (profile?.plan_code || "free").toLowerCase();
 
         // Obtener límites del plan
-        const { data: planData } = await admin
+        const { data: planData } = await supabase
             .from("plans")
             .select("max_products")
             .eq("code", planCode)
@@ -72,7 +69,7 @@ export async function POST(req: Request) {
         const maxProducts = planData?.max_products ?? 5;
 
         // Contar productos actuales
-        const { count: currentCount } = await admin
+        const { count: currentCount } = await supabase
             .from("products")
             .select("id", { count: "exact", head: true })
             .eq("user_id", user.id)
@@ -90,8 +87,8 @@ export async function POST(req: Request) {
             );
         }
 
-        // Insertar producto con cliente Admin (bypass RLS)
-        const { data: createdProduct, error: insertError } = await admin
+        // Insertar producto con cliente Route (respeta RLS)
+        const { data: createdProduct, error: insertError } = await supabase
             .from("products")
             .insert({
                 user_id: user.id,

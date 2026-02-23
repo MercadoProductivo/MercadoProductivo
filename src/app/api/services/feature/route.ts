@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     if (ownerRow.user_id !== user.id) {
       return NextResponse.json({ error: "Prohibido: no puedes modificar servicios de otro usuario" }, { status: 403 });
     }
-    
+
     // Validar permiso del plan para destacar (fallback permisivo si no se puede determinar)
     let canFeature: boolean | null = null;
     try {
@@ -94,11 +94,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Tu plan actual no permite destacar servicios" }, { status: 403 });
     }
 
-    const { data, error } = await supabase.rpc("sp_feature_service", {
+    const { data, error } = await supabase.rpc("sp_feature_service" as any, {
       p_service: serviceId,
       p_days: days,
-      // si no hay costo definido en el plan, el RPC acepta un fallback
-      p_cost: cost,
+      // p_cost es opcional: el costo por día se determina en el servidor según el plan
+      p_cost: null,
     });
     if (error) {
       logger.error("sp_feature_service failed", {
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
+    const row = Array.isArray(data) ? data[0] : (data as any);
     return NextResponse.json({
       remainingCredits: row?.remaining_credits ?? null,
       featuredUntil: row?.featured_until ?? null,

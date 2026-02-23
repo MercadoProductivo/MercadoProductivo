@@ -1,6 +1,6 @@
 export default function LoadingEditProduct() {
   return (
-    <main className="mx-auto max-w-5xl p-6 animate-pulse space-y-6">
+    <div className="mx-auto max-w-5xl p-6 animate-pulse space-y-6">
       <div className="flex items-center justify-between">
         <div className="h-7 w-56 bg-muted rounded" />
         <div className="h-9 w-32 bg-muted rounded" />
@@ -40,6 +40,6 @@ export default function LoadingEditProduct() {
           <div className="h-9 w-28 bg-muted rounded" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

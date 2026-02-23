@@ -34,14 +34,14 @@ Thumbs.db
 .vercel/
 .netlify/
 
-# Supabase (migraciones y metadata locales)
+# Supabase 
 /supabase/
 /supabase_migrations
 
 # Coverage
 coverage/
 
-# Editor (permitimos .vscode en este repo porque contiene settings útiles)
+# Editor
 .idea/
 # .vscode/
 
@@ -52,3 +52,19 @@ coverage/
 /Comandos
 /sql
 .vercel
+/scripts
+
+# Supabase
+.supabase
+
+# logs
+*.log
+*.log.gz
+*.log.zip
+*.log.7z
+*.log.rar
+*.log.tar
+*.log.tar.gz
+*.log.tar.zip
+*.log.tar.7z
+*.log.tar.rar

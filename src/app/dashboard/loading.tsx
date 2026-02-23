@@ -1,6 +1,6 @@
 export default function LoadingDashboard() {
   return (
-    <main className="mx-auto max-w-6xl p-6 space-y-6 animate-pulse">
+    <div className="mx-auto max-w-6xl p-6 space-y-6 animate-pulse">
       {/* Título y subtítulo */}
       <div className="space-y-2">
         <div className="h-8 w-64 bg-muted rounded" />
@@ -96,6 +96,6 @@ export default function LoadingDashboard() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

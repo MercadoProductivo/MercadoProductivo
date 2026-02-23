@@ -57,8 +57,10 @@ export default function ContactForm() {
 
     try {
       setLoading(true);
-      // TODO: integrar con una API real (por ejemplo POST /api/contact)
-      await new Promise((r) => setTimeout(r, 800));
+      // Simulación de envío de formulario a API
+      // En producción: await fetch('/api/contact', { method: 'POST', body: data });
+      console.log("Formulario de contacto enviado:", { nombre, email, asunto, mensaje });
+      await new Promise((r) => setTimeout(r, 1000));
       toast.success("¡Mensaje enviado! Te responderemos a la brevedad.");
       form.reset();
       setErrors({});

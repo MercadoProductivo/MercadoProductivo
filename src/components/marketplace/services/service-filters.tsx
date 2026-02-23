@@ -40,16 +40,16 @@ export default function ServiceFilters({
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => { 
-    setLocalPriceRange([filters.minPrice, filters.maxPrice]); 
+  useEffect(() => {
+    setLocalPriceRange([filters.minPrice, filters.maxPrice]);
   }, [filters.minPrice, filters.maxPrice]);
-  
-  useEffect(() => { 
-    setLocationQuery(!filters.location || filters.location === "all" ? "" : filters.location); 
+
+  useEffect(() => {
+    setLocationQuery(!filters.location || filters.location === "all" ? "" : filters.location);
   }, [filters.location]);
 
-  const updateFilter = (key: keyof ServiceFilters, value: any) => { 
-    onFiltersChange({ ...filters, [key]: value }); 
+  const updateFilter = (key: keyof ServiceFilters, value: any) => {
+    onFiltersChange({ ...filters, [key]: value });
   };
 
   // Step dinámico para el slider según el rango total
@@ -64,19 +64,27 @@ export default function ServiceFilters({
   }, [priceRange.min, priceRange.max]);
 
   const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
-  const sortTuple = (a: number, b: number) => (a <= b ? [a, b] : [b, a]);
+  const sortTuple = (a: number, b: number): [number, number] => (a <= b ? [a, b] : [b, a]);
 
   const handlePriceRangeChange = (v: number[]) => {
+    const v0 = v[0] ?? 0;
+    const v1 = v[1] ?? 0;
+    const min = priceRange.min ?? 0;
+    const max = priceRange.max ?? 0;
     const [mn, mx] = sortTuple(
-      clamp(v[0], priceRange.min, priceRange.max),
-      clamp(v[1], priceRange.min, priceRange.max)
+      clamp(v0, min, max),
+      clamp(v1, min, max)
     );
     setLocalPriceRange([mn, mx]);
   };
   const handlePriceRangeCommit = (v: number[]) => {
+    const v0 = v[0] ?? 0;
+    const v1 = v[1] ?? 0;
+    const min = priceRange.min ?? 0;
+    const max = priceRange.max ?? 0;
     const [mn, mx] = sortTuple(
-      clamp(v[0], priceRange.min, priceRange.max),
-      clamp(v[1], priceRange.min, priceRange.max)
+      clamp(v0, min, max),
+      clamp(v1, min, max)
     );
     onFiltersChange({ ...filters, minPrice: mn, maxPrice: mx });
   };
@@ -87,9 +95,9 @@ export default function ServiceFilters({
     let active = true;
     const run = async () => {
       const q = locationQuery.trim();
-      if (q.length < 1) { 
-        if (active) setLocationResults([]); 
-        return; 
+      if (q.length < 1) {
+        if (active) setLocationResults([]);
+        return;
       }
       await new Promise(r => setTimeout(r, 250));
       if (!active) return;
@@ -103,9 +111,9 @@ export default function ServiceFilters({
         .order("location", { ascending: true })
         .limit(50);
       if (!active) return;
-      if (error) { 
-        setLocationResults([]); 
-        return; 
+      if (error) {
+        setLocationResults([]);
+        return;
       }
       const list = Array.from(new Set((data || []).map((r: any) => r.location as string))).slice(0, 10);
       setLocationResults(list);
@@ -138,14 +146,14 @@ export default function ServiceFilters({
       <div className="flex flex-col sm:flex-row gap-2">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input 
-            placeholder="Buscar servicios..." 
-            value={filters.search} 
-            onChange={(e) => updateFilter("search", e.target.value)} 
-            className="pl-10 h-10" 
+          <Input
+            placeholder="Buscar servicios..."
+            value={filters.search}
+            onChange={(e) => updateFilter("search", e.target.value)}
+            className="pl-10 h-10"
           />
         </div>
-        
+
         <div className="sm:w-56">
           <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
             <SelectTrigger className="h-10">
@@ -161,10 +169,10 @@ export default function ServiceFilters({
             </SelectContent>
           </Select>
         </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={() => setIsFiltersOpen(!isFiltersOpen)} 
+
+        <Button
+          variant="outline"
+          onClick={() => setIsFiltersOpen(!isFiltersOpen)}
           className="h-10 px-3"
         >
           <Filter className="h-4 w-4 mr-2" /> Filtros
@@ -197,8 +205,8 @@ export default function ServiceFilters({
                 <Label className="flex items-center text-sm font-medium">
                   <Tag className="h-4 w-4 mr-2" /> Categoría
                 </Label>
-                <Select 
-                  value={filters.category} 
+                <Select
+                  value={filters.category}
                   onValueChange={(value) => updateFilter("category", value)}
                 >
                   <SelectTrigger className="h-9">
@@ -231,11 +239,11 @@ export default function ServiceFilters({
                   />
                   {isLocationDropdownOpen && locationQuery.length >= 1 && (
                     <div className="absolute z-20 mt-1 w-full rounded-md border bg-white shadow max-h-56 overflow-auto">
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         className="w-full text-left px-2 py-1.5 hover:bg-orange-50 text-sm"
-                        onClick={() => { 
-                          updateFilter("location", "all"); 
+                        onClick={() => {
+                          updateFilter("location", "all");
                           setLocationQuery("");
                           setIsLocationDropdownOpen(false);
                         }}
@@ -252,8 +260,8 @@ export default function ServiceFilters({
                             key={loc}
                             type="button"
                             className="w-full text-left px-2 py-1.5 hover:bg-orange-50 text-sm"
-                            onClick={() => { 
-                              updateFilter("location", loc); 
+                            onClick={() => {
+                              updateFilter("location", loc);
                               setLocationQuery(loc);
                               setIsLocationDropdownOpen(false);
                             }}
@@ -283,18 +291,18 @@ export default function ServiceFilters({
                   />
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
                     <span>
-                      {new Intl.NumberFormat("es-AR", { 
-                        style: "currency", 
-                        currency: "ARS", 
-                        minimumFractionDigits: 0 
-                      }).format(localPriceRange[0])}
+                      {new Intl.NumberFormat("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                        minimumFractionDigits: 0
+                      }).format(localPriceRange[0] ?? 0)}
                     </span>
                     <span>
-                      {new Intl.NumberFormat("es-AR", { 
-                        style: "currency", 
-                        currency: "ARS", 
-                        minimumFractionDigits: 0 
-                      }).format(localPriceRange[1])}
+                      {new Intl.NumberFormat("es-AR", {
+                        style: "currency",
+                        currency: "ARS",
+                        minimumFractionDigits: 0
+                      }).format(localPriceRange[1] ?? 0)}
                     </span>
                   </div>
                 </div>
@@ -303,10 +311,10 @@ export default function ServiceFilters({
 
             <div className="pt-2">
               <div className="flex items-center space-x-2">
-                <Checkbox 
-                  id="featured" 
-                  checked={filters.onlyFeatured} 
-                  onCheckedChange={(c) => updateFilter("onlyFeatured", Boolean(c))} 
+                <Checkbox
+                  id="featured"
+                  checked={filters.onlyFeatured}
+                  onCheckedChange={(c) => updateFilter("onlyFeatured", Boolean(c))}
                 />
                 <Label htmlFor="featured" className="text-sm font-medium cursor-pointer">
                   Solo servicios destacados
@@ -319,8 +327,8 @@ export default function ServiceFilters({
 
       <div className="flex items-center justify-between text-sm text-gray-600">
         <span>
-          {isLoading 
-            ? "Cargando servicios..." 
+          {isLoading
+            ? "Cargando servicios..."
             : `${totalServices} servicio${totalServices !== 1 ? 's' : ''} encontrado${totalServices !== 1 ? 's' : ''}`}
         </span>
       </div>

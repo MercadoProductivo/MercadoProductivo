@@ -32,12 +32,12 @@ function isValidDniCuit(raw: string): boolean {
     if (!/^\d{11}$/.test(digits)) return false;
     const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
     const nums = digits.split("").map((n) => parseInt(n, 10));
-    const sum = weights.reduce((acc, w, i) => acc + w * nums[i], 0);
+    const sum = weights.reduce((acc, w, i) => acc + w * nums[i]!, 0);
     const mod = sum % 11;
     let check = 11 - mod;
     if (check === 11) check = 0;
     if (check === 10) check = 9;
-    return check === nums[10];
+    return check === (nums[10] || 0);
   }
   return false;
 }
@@ -358,7 +358,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
       // Solo persistimos exportador si el plan lo permite, caso contrario lo forzamos a false
       payload.exportador = isDeluxe ? Boolean(nextValue) : false;
       // Asegurar que el trigger tenga NEW.plan_code
-      const roleRaw = (((user.user_metadata as any)?.role) || ((user.user_metadata as any)?.user_type) || "") as string;
+      const roleRaw = ((user.user_metadata as any)?.role_code || "") as string;
       const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
       if (existingPlanCodeRef.current) {
         payload.plan_code = existingPlanCodeRef.current;
@@ -421,7 +421,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
       }
       //
       // Incluir siempre plan_code en el payload para que el trigger tenga el valor en NEW.plan_code
-      const roleRaw = (((user.user_metadata as any)?.role) || ((user.user_metadata as any)?.user_type) || "") as string;
+      const roleRaw = ((user.user_metadata as any)?.role_code || "") as string;
       const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
       if (existingPlanCodeRef.current) {
         payload.plan_code = existingPlanCodeRef.current;

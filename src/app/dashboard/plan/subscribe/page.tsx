@@ -63,7 +63,7 @@ export default async function SubscribePage({ searchParams }: Props) {
     // Cargar plan para mostrar precios y ahorro
     const { data: plan } = await supabase
       .from("plans")
-      .select("code, name, currency, price_monthly, price_monthly_cents, price_yearly, price_yearly_cents")
+      .select("code, name, currency, price_monthly_cents, price_yearly_cents")
       .eq("code", code)
       .maybeSingle();
 
@@ -96,13 +96,11 @@ export default async function SubscribePage({ searchParams }: Props) {
       }
       return null;
     };
-    const pm = toNum((plan as any)?.price_monthly);
     const pmc = toNum((plan as any)?.price_monthly_cents);
-    const py = toNum((plan as any)?.price_yearly);
     const pyc = toNum((plan as any)?.price_yearly_cents);
     const currency = (((plan as any)?.currency as string) || "ARS").toUpperCase();
-    const priceMonthly = pm != null ? pm : (pmc != null ? pmc / 100 : 0);
-    const priceYearly = py != null ? py : (pyc != null ? pyc / 100 : null);
+    const priceMonthly = pmc != null ? pmc / 100 : 0;
+    const priceYearly = pyc != null ? pyc / 100 : null;
     const yearlyEffective = priceMonthly > 0 && (priceYearly == null || priceYearly <= priceMonthly + 0.01)
       ? priceMonthly * 12
       : (priceYearly ?? 0);

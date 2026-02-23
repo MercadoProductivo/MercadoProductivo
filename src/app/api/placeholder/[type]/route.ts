@@ -12,7 +12,7 @@ const MAP: Record<string, { text: string; bg: string }> = {
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params;
-  const { text, bg } = MAP[type] ?? MAP.default;
+  const { text, bg } = MAP[type] ?? MAP.default ?? { text: "Error", bg: "#ccc" };
   const width = 1200;
   const height = 400;
 

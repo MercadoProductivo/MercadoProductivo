@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function NosotrosPage() {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-4 py-10">
       <div className="space-y-4">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Nosotros</h1>
         <p className="max-w-prose text-muted-foreground">
@@ -36,6 +36,6 @@ export default function NosotrosPage() {
           Equipo multidisciplinario con foco en producto, datos y agro.
         </p>
       </section>
-    </main>
+    </div>
   );
 }

@@ -47,7 +47,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     const now = new Date().toISOString();
     const { error: upErr } = await supabase
       .from("chat_conversation_members")
-      .update({ last_read_at: now, unread_count: 0 })
+      .update({ last_read_at: now, unread_count: 0 } as any)
       .eq("conversation_id", conversationId)
       .eq("user_id", user.id);
     if (upErr) return NextResponse.json({ error: "READ_FAILED", message: upErr.message }, { status: 500 });

@@ -1,6 +1,6 @@
 export default function LoadingAuth() {
   return (
-    <main className="mx-auto max-w-md p-6 animate-pulse">
+    <div className="mx-auto max-w-md p-6 animate-pulse">
       <div className="space-y-2 text-center mb-6">
         <div className="mx-auto h-8 w-48 bg-muted rounded" />
         <div className="mx-auto h-4 w-64 bg-muted rounded" />
@@ -22,6 +22,6 @@ export default function LoadingAuth() {
           <div className="h-9 w-28 bg-muted rounded" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

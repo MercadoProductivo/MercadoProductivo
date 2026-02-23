@@ -8,7 +8,7 @@ export type NormalizedRole = "seller" | "buyer" | null;
  */
 export function normalizeRoleFromMetadata(meta: any): NormalizedRole {
   try {
-    const raw = (meta?.role || meta?.user_type || "").toString().trim().toLowerCase();
+    const raw = (meta?.role_code || "").toString().trim().toLowerCase();
     if (!raw) return null;
     if (raw === "anunciante" || raw === "seller") return "seller";
     if (raw === "buyer" || raw === "comprador") return "buyer";

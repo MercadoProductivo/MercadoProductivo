@@ -49,8 +49,7 @@ export default function MarketplaceView() {
         setUser(user);
 
         if (user) {
-          // Normalizar rol (compat: usar user_type legacy si existe) y evaluar solo contra 'seller'
-          const roleRaw = (user.user_metadata?.role || user.user_metadata?.user_type || "").toString();
+          const roleRaw = (user.user_metadata?.role_code || "").toString();
           const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
           setIsVendor(roleNormalized === "seller");
         }
@@ -78,7 +77,7 @@ export default function MarketplaceView() {
       // Refrescar sesión para reflejar metadata actualizada
       try {
         const { data: u } = await supabase.auth.getUser();
-        const roleRaw = (u?.user?.user_metadata?.role || u?.user?.user_metadata?.user_type || "").toString();
+        const roleRaw = (u?.user?.user_metadata?.role_code || "").toString();
         const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
         setIsVendor(roleNormalized === "seller");
       } catch { }
@@ -148,9 +147,9 @@ export default function MarketplaceView() {
           .order("price", { ascending: true });
 
         if (priceData && priceData.length > 0) {
-          const prices = priceData.map((item) => item.price);
-          const minPrice = Math.min(...prices);
-          const maxPrice = Math.max(...prices);
+          const prices = priceData.map((item) => item.price).filter((p): p is number => p !== null);
+          const minPrice = prices.length ? Math.min(...prices) : 0;
+          const maxPrice = prices.length ? Math.max(...prices) : 999999999;
 
           setPriceRange({ min: minPrice, max: maxPrice });
           setFilters((prev) => ({
@@ -292,7 +291,7 @@ export default function MarketplaceView() {
                   Cambiar a vendedor
                 </button>
                 <a
-                  href="/planes"
+                  href="/plans"
                   className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full border-2 border-white text-white hover:bg-white hover:text-orange-600 transition-all duration-300"
                 >
                   Ver planes
@@ -308,7 +307,7 @@ export default function MarketplaceView() {
                 Crear cuenta gratis
               </a>
               <a
-                href="/planes"
+                href="/plans"
                 className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-full border-2 border-white text-white hover:bg-white hover:text-orange-600 transition-all duration-300"
               >
                 Ver planes

@@ -54,7 +54,7 @@ export default async function BuyerHomePage() {
         </CardHeader>
         <CardContent>
           <Button asChild className="bg-orange-500 hover:bg-orange-600">
-            <Link href="/planes">Ver planes</Link>
+            <Link href="/plans">Ver planes</Link>
           </Button>
         </CardContent>
       </Card>

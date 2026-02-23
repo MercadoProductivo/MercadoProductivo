@@ -1,6 +1,6 @@
 export default function GlobalAppLoading() {
   return (
-    <main className="mx-auto max-w-6xl p-6 space-y-6 animate-pulse">
+    <div className="mx-auto max-w-6xl p-6 space-y-6 animate-pulse">
       <div className="space-y-2">
         <div className="h-8 w-64 bg-muted rounded" />
         <div className="h-4 w-80 bg-muted rounded" />
@@ -19,6 +19,6 @@ export default function GlobalAppLoading() {
           </div>
         ))}
       </section>
-    </main>
+    </div>
   );
 }

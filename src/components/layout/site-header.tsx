@@ -70,7 +70,7 @@ export default function SiteHeader() {
       const { data } = await supabase
         .from("profiles")
         .select("company, full_name, first_name, last_name")
-        .eq("id", user.id)
+        .eq("id", user!.id)
         .maybeSingle();
       if (!isActive) return;
       const name = (data?.full_name || `${data?.first_name ?? ""} ${data?.last_name ?? ""}`)
@@ -249,7 +249,7 @@ export default function SiteHeader() {
 
                 <DropdownMenu open={accountOpen} onOpenChange={setAccountOpen}>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-[#f06d04]/10 sm:gap-2">
+                    <button aria-label="Abrir menú de usuario" className="flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-[#f06d04]/10 sm:gap-2">
                       <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                         <AvatarImage src={(user.user_metadata as any)?.avatar_url || (user.user_metadata as any)?.picture} alt={displayName} />
                         <AvatarFallback>{displayName?.[0]?.toUpperCase() || "U"}</AvatarFallback>

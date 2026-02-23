@@ -89,8 +89,8 @@ export default function ProductFilters({
   const handlePriceRangeCommit = (values: number[]) => {
     onFiltersChange({
       ...filters,
-      minPrice: values[0],
-      maxPrice: values[1]
+      minPrice: values[0] ?? 0,
+      maxPrice: values[1] ?? 0
     });
   };
 
@@ -168,6 +168,7 @@ export default function ProductFilters({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar productos..."
+            aria-label="Buscar productos"
             value={filters.search}
             onChange={(e) => updateFilter("search", e.target.value)}
             className="pl-10 h-10"
@@ -177,7 +178,7 @@ export default function ProductFilters({
         {/* Ordenamiento */}
         <div className="sm:w-56">
           <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
-            <SelectTrigger className="h-10">
+            <SelectTrigger className="h-10" aria-label="Ordenar por">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
             <SelectContent>
@@ -240,7 +241,7 @@ export default function ProductFilters({
                   Categoría
                 </Label>
                 <Select value={filters.category} onValueChange={(value) => updateFilter("category", value)}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-9" aria-label="Filtrar por categoría">
                     <SelectValue placeholder="Todas las categorías" />
                   </SelectTrigger>
                   <SelectContent>
@@ -263,6 +264,7 @@ export default function ProductFilters({
                 <div className="relative">
                   <Input
                     placeholder="Buscar ubicación..."
+                    aria-label="Buscar ubicación"
                     value={locationQuery}
                     onChange={(e) => setLocationQuery(e.target.value)}
                     className="pr-10 h-9"
@@ -310,6 +312,7 @@ export default function ProductFilters({
                 </Label>
                 <div className="px-1">
                   <Slider
+                    aria-label="Rango de precios"
                     value={localPriceRange}
                     onValueChange={handlePriceRangeChange}
                     onValueCommit={handlePriceRangeCommit}
@@ -319,8 +322,8 @@ export default function ProductFilters({
                     className="w-full"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>{formatPrice(localPriceRange[0])}</span>
-                    <span>{formatPrice(localPriceRange[1])}</span>
+                    <span>{formatPrice(localPriceRange[0] ?? 0)}</span>
+                    <span>{formatPrice(localPriceRange[1] ?? 0)}</span>
                   </div>
                 </div>
               </div>

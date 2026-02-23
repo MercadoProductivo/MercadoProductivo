@@ -1,6 +1,6 @@
 export default function LoadingProducts() {
     return (
-      <main className="mx-auto max-w-5xl p-6 animate-pulse space-y-6">
+      <div className="mx-auto max-w-5xl p-6 animate-pulse space-y-6">
         <div className="flex items-center justify-between">
           <div className="h-7 w-40 bg-muted rounded" />
           <div className="h-9 w-36 bg-muted rounded" />
@@ -18,6 +18,6 @@ export default function LoadingProducts() {
             </div>
           ))}
         </div>
-      </main>
+      </div>
     );
   }

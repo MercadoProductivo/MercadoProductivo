@@ -6,7 +6,7 @@ import { AuthLeftHero } from "@/components/auth/auth-left-hero";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="min-h-dvh grid lg:grid-cols-2 bg-white">
+    <div className="min-h-dvh grid lg:grid-cols-2 bg-white">
       {/* Izquierda: hero con gradiente */}
       <aside className="hidden lg:block">
         <AuthLeftHero />
@@ -31,6 +31,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </section>
-    </main>
+    </div>
   );
 }

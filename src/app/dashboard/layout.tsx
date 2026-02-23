@@ -18,12 +18,12 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   return (
     <div className="flex min-h-screen bg-background">
       <DashboardSidebar initialIsSeller={normalizeRoleFromMetadata(user?.user_metadata || {}) === "seller"} />
-      <main className="flex-1 lg:ml-0">
+      <div className="flex-1 lg:ml-0">
         {/* Espaciado superior suave en móvil (AppShell ya compensa el header) */}
         <div className="p-4 lg:p-6">
           {children}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

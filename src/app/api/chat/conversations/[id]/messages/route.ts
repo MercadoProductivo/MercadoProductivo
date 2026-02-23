@@ -114,10 +114,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       const emailLocal = p.email ? String(p.email).split("@")[0] : undefined;
       const sender_name = getSenderDisplayName(
         {
-          company: p.company ?? null,
-          full_name: p.full_name ?? null,
-          first_name: p.first_name ?? null,
-          last_name: p.last_name ?? null,
+          company: p?.company ?? null,
+          full_name: p?.full_name ?? null,
+          first_name: p?.first_name ?? null,
+          last_name: p?.last_name ?? null,
         },
         emailLocal
       );
@@ -183,9 +183,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     // Insert con RLS (usa auth del usuario)
     const { data: inserted, error } = await supabase
       .from("chat_messages")
-      .insert({ conversation_id: conversationId, sender_id: user.id, body })
+      .insert({ conversation_id: conversationId, sender_id: user.id, body } as any)
       .select("id,conversation_id,sender_id,body,created_at")
-      .single();
+      .single() as any;
     if (error) return NextResponse.json({ error: "INSERT_FAILED", message: error.message }, { status: 500 });
 
     // Emitir eventos en Pusher (Web Push deshabilitado)

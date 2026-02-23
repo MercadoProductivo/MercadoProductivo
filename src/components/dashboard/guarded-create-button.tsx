@@ -94,7 +94,7 @@ export function GuardedCreateButton({ href, missingLabels, limitReached = false,
                 <AlertDialogAction
                   onClick={() => {
                     setOpen(false);
-                    router.push("/planes");
+                    router.push("/plans");
                   }}
                 >
                   Ver planes

@@ -107,13 +107,13 @@ export default async function Page() {
   const now = new Date();
   const periodYM = now.getFullYear() * 100 + (now.getMonth() + 1); // YYYYMM
   const { data: usage } = await supabase
-    .from("usage_counters")
+    .from("usage_counters" as any)
     .select("credits_used")
     .eq("user_id", user.id)
     .eq("period_ym", periodYM)
     .maybeSingle();
 
-  const creditsUsed = usage?.credits_used ?? 0;
+  const creditsUsed = (usage as any)?.credits_used ?? 0;
   const creditsMonthly = plan?.credits_monthly ?? 0;
   const creditsBalance = (profile as any)?.credits_balance ?? 0;
   const maxProducts = plan?.max_products ?? null;
@@ -256,7 +256,7 @@ export default async function Page() {
                   Para aumentar tu visibilidad, considera actualizar tu plan.
                   <div className="mt-2">
                     <Button asChild size="sm" variant="outline" className="border-amber-300 text-amber-900 hover:bg-amber-100">
-                      <Link href="/planes">Ver planes</Link>
+                      <Link href="/plans">Ver planes</Link>
                     </Button>
                   </div>
                 </AlertDescription>

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { headers } from "next/headers";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import PlanBadge from "@/components/badges/plan-badge";
 import CancelSubscriptionButton from "./cancel-button";
 
@@ -125,14 +125,8 @@ export default async function PlanPage({ searchParams }: Props) {
   // Uso mensual de créditos (tabla usage_counters)
   const now = new Date();
   const periodYM = now.getFullYear() * 100 + (now.getMonth() + 1); // YYYYMM
-  const { data: usage } = await supabase
-    .from("usage_counters")
-    .select("credits_used")
-    .eq("user_id", user.id)
-    .eq("period_ym", periodYM)
-    .maybeSingle();
-
-  const creditsUsed = usage?.credits_used ?? 0;
+  const { data: usage } = await supabase.from("usage_counters" as any).select("credits_used").eq("user_id", user.id).eq("period_ym", periodYM).maybeSingle();
+  const creditsUsed = (usage as any)?.credits_used ?? 0;
   const creditsBalance = (profile as any)?.credits_balance ?? 0;
 
   const maxProducts = plan?.max_products ?? null;
@@ -176,7 +170,7 @@ export default async function PlanPage({ searchParams }: Props) {
   const hasPending = Boolean(profile?.plan_pending_code);
 
   // Rol: normalizar a buyer/seller usando metadata con fallback a profile.role_code
-  const roleMeta = (user.user_metadata?.role || (user.user_metadata as any)?.user_type || "").toString();
+  const roleMeta = (user.user_metadata?.role_code || "").toString();
   const roleFromProfile = (profile?.role_code || "").toString();
   const roleRaw = roleMeta || roleFromProfile;
   const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
@@ -184,14 +178,13 @@ export default async function PlanPage({ searchParams }: Props) {
   const roleLabel = isSeller ? "Vendedor" : "Comprador";
 
   // Cargar planes disponibles (usando Supabase admin directamente para evitar 403 en SSR)
-  let plans: Array<{ code: string; name: string | null; price_monthly_cents?: number | null; price_monthly?: number | null; currency?: string | null } & Record<string, any>> = [];
+  let plans: Array<{ code: string; name: string | null; price_monthly_cents?: number | null; price_yearly_cents?: number | null; currency?: string | null } & Record<string, any>> = [];
   try {
-    const adminSupabase = createAdminClient();
-    const { data } = await adminSupabase
+    const { data: plansData } = await supabase
       .from("plans")
-      .select("code, name, price_monthly_cents, price_monthly, currency")
+      .select("code, name, max_products, max_images_per_product, credits_monthly, price_monthly_cents, price_yearly_cents, currency")
       .order("code", { ascending: true });
-    plans = Array.isArray(data) ? data : [];
+    plans = Array.isArray(plansData) ? plansData : [];
   } catch { }
 
   return (
@@ -319,6 +312,7 @@ export default async function PlanPage({ searchParams }: Props) {
           <div className="grid gap-3 sm:grid-cols-2">
             {plans.map((p: any) => {
               const code = (p.code || "").toLowerCase();
+              const isFree = !p.price_monthly_cents || p.price_monthly_cents === 0;
               const label = p.name || p.code || "Plan";
               const isCurrent = planCode && planCode.toLowerCase() === code;
               const isDisabled = Boolean(isCurrent || hasPending);
@@ -334,7 +328,7 @@ export default async function PlanPage({ searchParams }: Props) {
                     </Button>
                   ) : (
                     <Button asChild size="sm" variant="default">
-                      <Link href="/planes" prefetch={false}>
+                      <Link href="/plans" prefetch={false}>
                         {"Cambiar / Contratar"}
                       </Link>
                     </Button>

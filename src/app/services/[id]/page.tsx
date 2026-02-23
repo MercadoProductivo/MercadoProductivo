@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -52,17 +52,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
     return {
       title: service.title,
-      description: service.description,
+      description: service.description ?? undefined,
       openGraph: {
         title: service.title,
-        description: service.description,
+        description: service.description ?? undefined,
         url,
         images: image ? [{ url: image, width: 1200, height: 630 }] : undefined,
       },
       twitter: {
         card: image ? "summary_large_image" : "summary",
         title: service.title,
-        description: service.description,
+        description: service.description ?? undefined,
         images: image ? [image] : undefined,
       },
     };
@@ -98,32 +98,22 @@ export default async function PublicServicePage({ params }: { params: Promise<{ 
     ? "Consultar Precio"
     : new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }).format(Number(service.price));
 
-  const createdAt = new Date(service.created_at).toLocaleDateString("es-ES", {
+  const createdAt = new Date(service.created_at as string).toLocaleDateString("es-ES", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
 
-  // Cargar imágenes del servicio (usar Service Role si está disponible; fallback a cliente normal)
+  // Cargar imágenes del servicio
   let images: string[] = [];
   try {
-    const supabaseAdmin = createAdminClient();
-    const { data: gallery } = await supabaseAdmin
+    const { data: gallery } = await supabase
       .from("service_images")
       .select("url,id")
       .eq("service_id", service.id)
       .order("id", { ascending: true });
     images = (gallery || []).map((g: any) => g.url as string);
-  } catch {
-    try {
-      const { data: gallery } = await supabase
-        .from("service_images")
-        .select("url,id")
-        .eq("service_id", service.id)
-        .order("id", { ascending: true });
-      images = (gallery || []).map((g: any) => g.url as string);
-    } catch { }
-  }
+  } catch { }
 
   // Cargar perfil del vendedor desde endpoint público (consistente con productos)
   const hdrs = await headers();
@@ -199,14 +189,14 @@ export default async function PublicServicePage({ params }: { params: Promise<{ 
             <SellerInfoCard
               productTitle={service.title}
               seller={{
-                id: service.user_id,
+                id: service.user_id as string,
                 first_name: seller.first_name ?? null,
                 last_name: seller.last_name ?? null,
                 full_name: seller.full_name ?? null,
                 company: seller.company ?? null,
                 city: seller.city ?? null,
                 province: seller.province ?? null,
-                location: seller.location ?? null,
+                location: (seller.city && seller.province) ? `${seller.city}, ${seller.province}` : (seller.city || seller.province || null),
                 avatar_url: seller.avatar_url ?? null,
                 phone: seller.phone ?? null,
                 created_at: seller.created_at ?? null,

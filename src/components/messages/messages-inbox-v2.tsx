@@ -777,10 +777,10 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
                         key={c.id}
                         className={cn(
                           "group flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all duration-200",
-                          "border-b border-slate-100 dark:border-slate-800",
-                          "hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-transparent dark:hover:from-orange-900/10",
-                          unread > 0 && "bg-orange-50/40 dark:bg-orange-900/10",
-                          isActive && "bg-gradient-to-r from-orange-100/60 to-orange-50/30 dark:from-orange-900/20 border-l-2 border-l-orange-500"
+                          "border-b border-slate-100",
+                          "hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-transparent",
+                          unread > 0 && "bg-orange-50/40",
+                          isActive && "bg-gradient-to-r from-orange-100/60 to-orange-50/30 border-l-2 border-l-orange-500"
                         )}
                         onClick={() => openChat(c)}
                       >
@@ -788,16 +788,16 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
                         <div className="relative shrink-0">
                           <Avatar className={cn(
                             "h-12 w-12 ring-2 transition-all duration-200",
-                            isActive ? "ring-orange-400" : "ring-white dark:ring-slate-800",
-                            "group-hover:ring-orange-200 dark:group-hover:ring-orange-800"
+                            isActive ? "ring-orange-400" : "ring-white",
+                            "group-hover:ring-orange-200"
                           )}>
                             <AvatarImage src={avatar} alt={name || "Usuario"} />
-                            <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
+                            <AvatarFallback className="bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 font-semibold">
                               {initialFrom(name)}
                             </AvatarFallback>
                           </Avatar>
                           {/* Indicador online (pequeño círculo verde) */}
-                          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-slate-900 bg-emerald-500" />
+                          <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />
                         </div>
 
                         {/* Contenido */}
@@ -805,20 +805,20 @@ export default function MessagesInboxV2({ userId }: { userId: string }) {
                           <div className="flex items-center justify-between gap-2">
                             <div className={cn(
                               "truncate font-semibold text-sm",
-                              unread > 0 ? "text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300"
+                              unread > 0 ? "text-slate-900" : "text-slate-700"
                             )}>
                               {name || "—"}
                             </div>
                             {/* Hora */}
-                            <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">
+                            <span className="text-[11px] text-slate-400 shrink-0">
                               {c.last_created_at ? new Date(c.last_created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : ""}
                             </span>
                           </div>
                           <div className={cn(
                             "truncate text-sm mt-0.5",
                             unread > 0
-                              ? "text-slate-600 dark:text-slate-300 font-medium"
-                              : "text-slate-500 dark:text-slate-400"
+                              ? "text-slate-600 font-medium"
+                              : "text-slate-500"
                           )}>
                             {c.preview || "—"}
                           </div>

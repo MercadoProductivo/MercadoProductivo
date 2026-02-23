@@ -3,10 +3,19 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Send, Smile } from "lucide-react";
 import { toast } from "sonner";
 import { enqueueConversationMessage } from "@/lib/chat/offline-queue";
-import EmojiPicker from "./emoji-picker";
+import dynamic from "next/dynamic";
+
+const EmojiPicker = dynamic(() => import("./emoji-picker"), {
+  ssr: false,
+  loading: () => (
+    <Button type="button" variant="ghost" size="icon" disabled className="h-8 w-8 rounded-full hover:bg-muted">
+      <Smile className="h-5 w-5 text-muted-foreground" />
+    </Button>
+  ),
+});
 
 export type ChatV2Sent = {
   id: string;
@@ -136,7 +145,7 @@ export default function ConversationChatInput({
   return (
     <div className="flex items-end gap-3 p-2">
       {/* Área de input */}
-      <div className="flex flex-1 items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 shadow-sm transition-all focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-100 dark:focus-within:ring-orange-900/30">
+      <div className="flex flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm transition-all focus-within:border-orange-300 focus-within:ring-2 focus-within:ring-orange-100">
         <EmojiPicker onEmojiSelect={handleEmojiSelect} disabled={sending} />
         <Textarea
           ref={inputRef}

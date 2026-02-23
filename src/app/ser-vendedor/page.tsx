@@ -13,7 +13,7 @@ export default async function SerVendedorPage() {
   if (!user) redirect("/auth/login?next=/ser-vendedor");
 
   // Si ya es vendedor, mandamos directo al dashboard
-  const roleRaw = (user.user_metadata?.role || (user as any)?.user_metadata?.user_type || "").toString();
+  const roleRaw = (user.user_metadata?.role_code || "").toString();
   const role = roleRaw === "anunciante" ? "seller" : roleRaw;
   const isSeller = role === "seller";
   if (isSeller) redirect("/dashboard");

@@ -63,15 +63,13 @@ export async function GET(
         }
 
         // Check if presence is stale (more than 2 minutes old = considered offline)
-        const updatedAt = new Date(data.updated_at).getTime();
-        const staleThreshold = 2 * 60 * 1000; // 2 minutes
-        const isStale = Date.now() - updatedAt > staleThreshold;
-        const effectiveOnline = data.is_online && !isStale;
+        const updatedAtStr = (data as any).updated_at;
+        const updatedAt = new Date(updatedAtStr as string).getTime();
+        const isStale = Date.now() - updatedAt > 2 * 60 * 1000;
 
         return NextResponse.json({
-            user_id: userId,
-            is_online: effectiveOnline,
-            last_seen_at: data.last_seen_at,
+            is_online: isStale ? false : (data as any).is_online,
+            last_seen_at: (data as any).last_seen_at,
         });
     } catch (e: any) {
         console.error("Presence lookup exception:", e);

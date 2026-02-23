@@ -633,7 +633,7 @@ export default function ServiceForm({ missingLabels = [] as string[] }: { missin
       {limitReached && (
         <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 sm:text-sm">
           Alcanzaste el máximo de {maxServices ?? 0} servicios para tu plan. Para publicar más, actualiza tu plan.
-          <a href="/planes" className="ml-2 underline text-orange-700 hover:text-orange-800">Ver planes</a>
+          <a href="/plans" className="ml-2 underline text-orange-700 hover:text-orange-800">Ver planes</a>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createRouteClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,7 +19,7 @@ export async function GET() {
         hasServiceKey: !!serviceKey,
       }, { status: 500 });
     }
-    const supabase = createAdminClient();
+    const supabase = await createRouteClient();
     // Intentamos incluir columnas opcionales relacionadas a precios y moneda si existen en la tabla
     const columnsFull = "code, name, max_products, max_images_per_product, credits_monthly, can_feature, feature_cost, price_monthly_cents, price_yearly_cents, currency, price_monthly, price_yearly";
     const { data, error } = await supabase
@@ -61,7 +61,7 @@ export async function GET() {
           .from("plans")
           .select("code", { count: "exact", head: true });
         rowCount = typeof count === "number" ? count : null;
-      } catch {}
+      } catch { }
       return NextResponse.json({
         error: "QUERY_ERROR",
         message: (errorBase || error as any)?.message || "No se pudieron cargar los planes",

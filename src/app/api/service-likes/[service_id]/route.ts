@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+
 import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
@@ -56,8 +56,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ service_id: s
       return NextResponse.json({ error: "UNAUTHORIZED", message: "Debe iniciar sesión para dar like" }, { status: 401 });
     }
 
-    const admin = createAdminClient();
-    const { data: service, error: svcErr } = await admin
+    const { data: service, error: svcErr } = await supabase
       .from("services")
       .select("id,user_id")
       .eq("id", serviceId)

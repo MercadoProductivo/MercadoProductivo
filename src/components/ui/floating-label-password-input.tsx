@@ -20,6 +20,7 @@ const FloatingLabelPasswordInput = React.forwardRef<HTMLInputElement, FloatingLa
             <div className="relative">
                 <Input
                     id={inputId}
+                    aria-label={label}
                     type={show ? "text" : "password"}
                     placeholder=" "
                     className={cn(

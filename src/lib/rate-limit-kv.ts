@@ -222,7 +222,7 @@ export async function checkRateLimit(
 export function getClientIP(req: Request): string {
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    return forwarded.split(",")[0]?.trim() || "";
   }
   const realIP = req.headers.get("x-real-ip");
   if (realIP) return realIP;
@@ -273,7 +273,7 @@ export async function rateLimitMiddleware(
  */
 export async function clearRateLimit(identifier: string, namespace = "ratelimit"): Promise<void> {
   const key = `${namespace}:${identifier}`;
-  
+
   const kv = await getKVClient();
   if (kv) {
     try {
@@ -282,6 +282,6 @@ export async function clearRateLimit(identifier: string, namespace = "ratelimit"
       logger.error("Failed to clear rate limit in KV", { error: String(error), key });
     }
   }
-  
+
   memoryStore.delete(key);
 }

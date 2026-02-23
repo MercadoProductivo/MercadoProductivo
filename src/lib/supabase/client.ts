@@ -1,7 +1,16 @@
 "use client";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
+import { Database } from "@/types/database.types";
+
+let client: ReturnType<typeof createBrowserClient<Database>> | undefined;
 
 export function createClient() {
-  // Usa variables de entorno configuradas en el proyecto automáticamente
-  return createClientComponentClient();
+  // Singleton pattern: reutiliza el cliente si ya existe
+  if (!client) {
+    client = createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+  }
+  return client;
 }

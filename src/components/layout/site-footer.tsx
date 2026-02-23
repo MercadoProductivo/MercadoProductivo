@@ -18,7 +18,7 @@ export default function SiteFooter() {
           {/* Brand */}
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-orange-500">Mercado Productivo</h2>
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <p className="text-sm text-slate-300 leading-relaxed">
               Conectamos vendedores y compradores B2B agroindustriales con transparencia y eficiencia.
             </p>
           </div>
@@ -27,10 +27,10 @@ export default function SiteFooter() {
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Plataforma</h3>
             <ul className="space-y-2">
-              <li><Link href="/" className="text-sm text-slate-400 hover:text-white transition-colors">Inicio</Link></li>
-              <li><Link href="/" className="text-sm text-slate-400 hover:text-white transition-colors">Productos</Link></li>
-              <li><Link href="/vendedores" className="text-sm text-slate-400 hover:text-white transition-colors">Vendedores</Link></li>
-              <li><Link href="/planes" className="text-sm text-slate-400 hover:text-white transition-colors">Planes</Link></li>
+              <li><Link href="/" className="text-sm text-slate-300 hover:text-white transition-colors">Inicio</Link></li>
+              <li><Link href="/" className="text-sm text-slate-300 hover:text-white transition-colors">Productos</Link></li>
+              <li><Link href="/vendedores" className="text-sm text-slate-300 hover:text-white transition-colors">Vendedores</Link></li>
+              <li><Link href="/plans" className="text-sm text-slate-300 hover:text-white transition-colors">Planes</Link></li>
             </ul>
           </div>
 
@@ -38,10 +38,10 @@ export default function SiteFooter() {
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Soporte</h3>
             <ul className="space-y-2">
-              <li><Link href="/contacto" className="text-sm text-slate-400 hover:text-white transition-colors">Contacto</Link></li>
-              <li><Link href="/faq" className="text-sm text-slate-400 hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link href="/terminos" className="text-sm text-slate-400 hover:text-white transition-colors">Términos</Link></li>
-              <li><Link href="/privacidad" className="text-sm text-slate-400 hover:text-white transition-colors">Privacidad</Link></li>
+              <li><Link href="/contacto" className="text-sm text-slate-300 hover:text-white transition-colors">Contacto</Link></li>
+              <li><Link href="/faq" className="text-sm text-slate-300 hover:text-white transition-colors">FAQ</Link></li>
+              <li><Link href="/terminos" className="text-sm text-slate-300 hover:text-white transition-colors">Términos</Link></li>
+              <li><Link href="/privacidad" className="text-sm text-slate-300 hover:text-white transition-colors">Privacidad</Link></li>
             </ul>
           </div>
 
@@ -49,9 +49,9 @@ export default function SiteFooter() {
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Contacto</h3>
             <ul className="space-y-2">
-              <li className="text-sm text-slate-400">📍 Buenos Aires, Argentina</li>
+              <li className="text-sm text-slate-300">📍 Buenos Aires, Argentina</li>
               <li>
-                <a href="mailto:info@mercadoproductivo.com" className="text-sm text-slate-400 hover:text-white transition-colors">
+                <a href="mailto:info@mercadoproductivo.com" className="text-sm text-slate-300 hover:text-white transition-colors">
                   ✉️ info@mercadoproductivo.com
                 </a>
               </li>
@@ -59,9 +59,8 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        {/* Copyright */}
         <div className="mt-8 pt-6 border-t border-slate-800 text-center">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-400">
             © {currentYear} Mercado Productivo. Todos los derechos reservados.
           </p>
         </div>

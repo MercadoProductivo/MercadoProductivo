@@ -28,7 +28,7 @@ export async function POST() {
   }
 
   // Actualizar metadata del usuario para que la UI reaccione de inmediato
-  const { error: updateAuthErr } = await supabase.auth.updateUser({ data: { role: "seller", user_type: "seller" } });
+  const { error: updateAuthErr } = await supabase.auth.updateUser({ data: { role_code: "vendedor" } });
   if (updateAuthErr) {
     // No es crítico para el backend, pero lo informamos
     return NextResponse.json({ ok: true, warning: "PROFILE_UPDATED_BUT_METADATA_FAILED" });
