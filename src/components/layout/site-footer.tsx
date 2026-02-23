@@ -1,13 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 /**
  * SiteFooter - Footer principal del sitio.
- * Versión estable sin dependencias problemáticas.
  */
 export default function SiteFooter() {
   const currentYear = new Date().getFullYear();
+  const supabase = useMemo(() => createClient(), []);
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setUser(data.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => {
+      mounted = false;
+      try { subscription.unsubscribe(); } catch { }
+    };
+  }, [supabase]);
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.replace("/");
+    router.refresh();
+  }
 
   return (
     <footer className="w-full bg-slate-900 text-slate-300 border-t border-slate-800">
@@ -59,10 +86,20 @@ export default function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-800 text-center">
+        {/* Barra inferior con copyright y cerrar sesión */}
+        <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-slate-400">
             © {currentYear} Mercado Productivo. Todos los derechos reservados.
           </p>
+          {user && (
+            <button
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-red-400 transition-colors"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Cerrar sesión
+            </button>
+          )}
         </div>
       </div>
     </footer>

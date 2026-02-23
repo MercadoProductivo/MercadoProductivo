@@ -93,7 +93,7 @@ export default function DashboardSidebar({ initialIsSeller }: { initialIsSeller?
 
   return (
     /* Sidebar solo para desktop — móvil usa el menú global flotante */
-    <aside className="hidden lg:flex lg:flex-col border-r bg-card/50 w-64 h-full">
+    <aside className="hidden lg:flex lg:flex-col border-r bg-card/50 w-64 sticky top-16 h-[calc(100vh-4rem)]">
       <div className="flex flex-col h-full">
         {/* Header del sidebar */}
         <div className="flex items-center justify-center p-4 border-b">
@@ -105,8 +105,8 @@ export default function DashboardSidebar({ initialIsSeller }: { initialIsSeller?
           <SidebarNav isSeller={isSeller} />
         </div>
 
-        {/* Sección inferior fija: CTA vendedor + cerrar sesión */}
-        <div className="border-t">
+        {/* Sección inferior fija pegada al fondo */}
+        <div className="mt-auto border-t">
           {!isSeller && (
             <div className="p-3">
               <Button asChild className="w-full">
@@ -114,7 +114,7 @@ export default function DashboardSidebar({ initialIsSeller }: { initialIsSeller?
               </Button>
             </div>
           )}
-          <div className="p-3">
+          <div className={!isSeller ? "px-3 pb-3" : "p-3"}>
             <button
               onClick={handleSignOut}
               className="w-full flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
