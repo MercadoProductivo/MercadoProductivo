@@ -46,10 +46,13 @@ coverage/
 # .vscode/
 
 # others/
-/docs
-/legacy
-/TO-DO
-/Comandos
+.github
+.vscode
+docs
+scripts
+legacy
+TO-DO
+Comandos
 /sql
 .vercel
 /scripts
