@@ -10,7 +10,7 @@ export function normalizeRoleFromMetadata(meta: any): NormalizedRole {
   try {
     const raw = (meta?.role_code || "").toString().trim().toLowerCase();
     if (!raw) return null;
-    if (raw === "anunciante" || raw === "seller") return "seller";
+    if (raw === "anunciante" || raw === "seller" || raw === "vendedor") return "seller";
     if (raw === "buyer" || raw === "comprador") return "buyer";
     // Si llegamos aquí y el valor no está mapeado, lo devolvemos si coincide con los soportados
     if (raw.includes("seller")) return "seller";

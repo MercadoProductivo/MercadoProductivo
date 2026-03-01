@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
 export default function MarketplaceView() {
   const [filters, setFilters] = useState<ProductFiltersType>({
@@ -49,9 +50,7 @@ export default function MarketplaceView() {
         setUser(user);
 
         if (user) {
-          const roleRaw = (user.user_metadata?.role_code || "").toString();
-          const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
-          setIsVendor(roleNormalized === "seller");
+          setIsVendor(normalizeRoleFromMetadata(user.user_metadata) === "seller");
         }
       } catch (error) {
         console.error("Error loading user:", error);
@@ -77,9 +76,7 @@ export default function MarketplaceView() {
       // Refrescar sesión para reflejar metadata actualizada
       try {
         const { data: u } = await supabase.auth.getUser();
-        const roleRaw = (u?.user?.user_metadata?.role_code || "").toString();
-        const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
-        setIsVendor(roleNormalized === "seller");
+        setIsVendor(normalizeRoleFromMetadata(u?.user?.user_metadata) === "seller");
       } catch { }
     } catch (e) {
       toast.error("Error al cambiar a vendedor");

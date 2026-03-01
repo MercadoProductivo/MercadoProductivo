@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Camera, MapPin, User, Building, Phone, Mail, FileText, Globe } from "lucide-react";
+import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
 function isValidDniCuit(raw: string): boolean {
   const digits = (raw || "").replace(/\D/g, "");
@@ -358,8 +359,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
       // Solo persistimos exportador si el plan lo permite, caso contrario lo forzamos a false
       payload.exportador = isDeluxe ? Boolean(nextValue) : false;
       // Asegurar que el trigger tenga NEW.plan_code
-      const roleRaw = ((user.user_metadata as any)?.role_code || "") as string;
-      const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
+      const roleNormalized = normalizeRoleFromMetadata(user.user_metadata as any);
       if (existingPlanCodeRef.current) {
         payload.plan_code = existingPlanCodeRef.current;
       } else if (roleNormalized === "seller") {
@@ -421,8 +421,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
       }
       //
       // Incluir siempre plan_code en el payload para que el trigger tenga el valor en NEW.plan_code
-      const roleRaw = ((user.user_metadata as any)?.role_code || "") as string;
-      const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
+      const roleNormalized = normalizeRoleFromMetadata(user.user_metadata as any);
       if (existingPlanCodeRef.current) {
         payload.plan_code = existingPlanCodeRef.current;
       } else if (roleNormalized === "seller") {

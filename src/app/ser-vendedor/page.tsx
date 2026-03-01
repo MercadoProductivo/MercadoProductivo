@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CheckCircle2, Minus, Rocket, ShieldCheck } from "lucide-react";
 import UpgradeToSellerButton from "@/components/upgrade/upgrade-to-seller-button";
+import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,9 +14,7 @@ export default async function SerVendedorPage() {
   if (!user) redirect("/auth/login?next=/ser-vendedor");
 
   // Si ya es vendedor, mandamos directo al dashboard
-  const roleRaw = (user.user_metadata?.role_code || "").toString();
-  const role = roleRaw === "anunciante" ? "seller" : roleRaw;
-  const isSeller = role === "seller";
+  const isSeller = normalizeRoleFromMetadata(user.user_metadata) === "seller";
   if (isSeller) redirect("/dashboard");
 
   return (

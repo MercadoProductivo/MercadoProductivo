@@ -10,6 +10,7 @@ import type { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Briefcase, Users, TrendingUp, Shield, Plus, ArrowRight, Sparkles } from "lucide-react";
+import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
 export default function ServicesMarketplaceView() {
   const [filters, setFilters] = useState<ServiceFiltersType>({
@@ -38,9 +39,7 @@ export default function ServicesMarketplaceView() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user ?? null);
       if (user) {
-        const roleRaw = (user.user_metadata?.role_code || "").toString();
-        const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
-        setIsVendor(roleNormalized === "seller");
+        setIsVendor(normalizeRoleFromMetadata(user.user_metadata) === "seller");
       } else {
         setIsVendor(false);
       }

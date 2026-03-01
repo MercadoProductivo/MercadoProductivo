@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useNotifications } from "@/providers/notifications-provider";
 import { MAIN_NAV, getDashboardNav } from "@/config/navigation";
 import { PWAInstallButton } from "@/components/pwa";
+import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
 // Navegación centralizada importada desde src/config/navigation.ts
 
@@ -103,10 +104,7 @@ export default function GlobalMobileMenu({ initialIsSeller }: { initialIsSeller?
     (user?.user_metadata?.name as string | undefined) ||
     "Usuario";
 
-  // Rol normalizado: preferir valor inicial pasado desde el servidor para evitar flicker
-  const roleRaw = (user?.user_metadata?.role_code || "").toString();
-  const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
-  const isSeller = typeof initialIsSeller === "boolean" ? initialIsSeller : roleNormalized === "seller";
+  const isSeller = typeof initialIsSeller === "boolean" ? initialIsSeller : normalizeRoleFromMetadata(user?.user_metadata) === "seller";
   const messagesHref = "/dashboard/messages";
 
   // Items de cuenta según rol

@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 
 import PlanBadge from "@/components/badges/plan-badge";
 import CancelSubscriptionButton from "./cancel-button";
+import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -173,8 +174,7 @@ export default async function PlanPage({ searchParams }: Props) {
   const roleMeta = (user.user_metadata?.role_code || "").toString();
   const roleFromProfile = (profile?.role_code || "").toString();
   const roleRaw = roleMeta || roleFromProfile;
-  const roleNormalized = roleRaw === "anunciante" ? "seller" : roleRaw;
-  const isSeller = roleNormalized === "seller" || !!planCode || (productsCount ?? 0) > 0;
+  const isSeller = normalizeRoleFromMetadata({ role_code: roleRaw }) === "seller" || !!planCode || (productsCount ?? 0) > 0;
   const roleLabel = isSeller ? "Vendedor" : "Comprador";
 
   // Cargar planes disponibles (usando Supabase admin directamente para evitar 403 en SSR)
