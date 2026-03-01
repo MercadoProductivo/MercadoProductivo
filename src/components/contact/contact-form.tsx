@@ -57,15 +57,20 @@ export default function ContactForm() {
 
     try {
       setLoading(true);
-      // Simulación de envío de formulario a API
-      // En producción: await fetch('/api/contact', { method: 'POST', body: data });
-      console.log("Formulario de contacto enviado:", { nombre, email, asunto, mensaje });
-      await new Promise((r) => setTimeout(r, 1000));
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, email, asunto, mensaje }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Error al enviar");
+      }
       toast.success("¡Mensaje enviado! Te responderemos a la brevedad.");
       form.reset();
       setErrors({});
-    } catch (e) {
-      toast.error("No se pudo enviar el mensaje. Intenta nuevamente.");
+    } catch (e: any) {
+      toast.error(e?.message || "No se pudo enviar el mensaje. Intenta nuevamente.");
     } finally {
       setLoading(false);
     }

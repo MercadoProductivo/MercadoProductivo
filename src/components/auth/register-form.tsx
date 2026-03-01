@@ -123,7 +123,7 @@ export default function RegisterForm() {
             first_name: values.firstName,
             last_name: values.lastName,
             ...(values.userType === "seller"
-              ? { plan_code: "gratis", plan: "Plan Básico" }
+              ? { plan_code: "free" }
               : {}),
           },
           emailRedirectTo:

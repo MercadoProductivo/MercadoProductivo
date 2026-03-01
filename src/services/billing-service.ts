@@ -125,38 +125,57 @@ export class BillingService {
                         const { data: freePlan } = await admin
                             .from("plans")
                             .select("code, price_monthly, price_monthly_cents")
-                            .or("code.eq.free,code.eq.gratis,price_monthly.eq.0,price_monthly_cents.eq.0")
+                            .eq("code", "free")
                             .limit(1)
                             .maybeSingle();
                         const freeCode = (freePlan as any)?.code || "free";
 
                         let effectiveAt = new Date();
+                        let isImmediate = true;
                         if (profile?.plan_renews_at) {
                             const r = new Date(profile.plan_renews_at);
-                            if (!Number.isNaN(r.getTime()) && r > new Date()) effectiveAt = r;
+                            if (!Number.isNaN(r.getTime()) && r > new Date()) {
+                                effectiveAt = r;
+                                isImmediate = false;
+                            }
                         } else if (profile?.plan_activated_at) {
                             const a = new Date(profile.plan_activated_at);
                             if (!Number.isNaN(a.getTime())) {
                                 const d = new Date(a);
                                 d.setMonth(d.getMonth() + 1);
-                                if (d > new Date()) effectiveAt = d;
+                                if (d > new Date()) { effectiveAt = d; isImmediate = false; }
                             }
                         }
 
-                        await admin
-                            .from("profiles")
-                            .update({
-                                plan_pending_code: freeCode,
-                                plan_pending_effective_at: effectiveAt.toISOString(),
-                                mp_subscription_status: status as any
-                            })
-                            .eq("id", userId);
+                        if (isImmediate) {
+                            // Aplicar cambio ahora mismo — no hay período activo
+                            await admin
+                                .from("profiles")
+                                .update({
+                                    plan_code: freeCode,
+                                    plan_pending_code: null,
+                                    plan_pending_effective_at: null,
+                                    plan_activated_at: new Date().toISOString(),
+                                    mp_subscription_status: "cancelled" as any,
+                                })
+                                .eq("id", userId);
+                        } else {
+                            // Programar cambio para fin de ciclo
+                            await admin
+                                .from("profiles")
+                                .update({
+                                    plan_pending_code: freeCode,
+                                    plan_pending_effective_at: effectiveAt.toISOString(),
+                                    mp_subscription_status: "cancelled" as any,
+                                })
+                                .eq("id", userId);
+                        }
 
                         try {
                             await admin.from("billing_events").insert({
                                 user_id: userId,
-                                kind: "subscription_cancelled_by_mp",
-                                payload: { preapproval_id: id, plan_pending_code: freeCode, effective_at: effectiveAt.toISOString() },
+                                kind: isImmediate ? "plan_downgraded_to_free_immediate" : "subscription_cancelled_by_mp",
+                                payload: { preapproval_id: id, plan_pending_code: freeCode, effective_at: effectiveAt.toISOString(), immediate: isImmediate },
                             } as any);
                         } catch (insertErr) {
                             logger.error("[Webhook] Failed to log cancellation event", { userId, id, error: insertErr });

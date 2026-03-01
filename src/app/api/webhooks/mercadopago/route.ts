@@ -21,17 +21,17 @@ export async function POST(req: Request) {
     // 1. Leer body crudo para validación de firma
     const raw = await req.text().catch(() => "");
 
-    // 2. Validar firma HMAC
-    const isValid = await validateMPSignature(req, raw);
+    // 2. Parsear body para obtener el id antes de validar firma (necesario para formato v1= de MP)
+    const body = raw ? (JSON.parse(raw) as any) : undefined;
+    id = (body?.data?.id as string | undefined) || (body?.id as string | undefined) || getIdFromUrl(req.url);
+
+    // 3. Validar firma HMAC (pasamos dataId para soporte del formato v1= de MP)
+    const isValid = await validateMPSignature(req, raw, id);
     if (!isValid) {
       return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
     }
 
-    // 3. Parsear body
-    const body = raw ? (JSON.parse(raw) as any) : undefined;
-
-    // 4. Determinar ID y Tipo de evento
-    id = (body?.data?.id as string | undefined) || (body?.id as string | undefined) || getIdFromUrl(req.url);
+    // 4. Determinar Tipo de evento
     const typeRaw = (body?.type as string | undefined) || (body?.topic as string | undefined) || "";
     const type = typeRaw.toLowerCase();
 
@@ -54,11 +54,6 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, id: id || null });
 }
 
-export async function GET(req: Request) {
-  const id = getIdFromUrl(req.url);
-  if (id) {
-    await BillingService.processPreapproval(id);
-  }
-  // MP espera 200 para no reintentar
-  return NextResponse.json({ ok: true, id: id || null });
-}
+// GET removido: era explotable sin autenticación de firma
+// MP solo llama al webhook vía POST. Si necesitás reprocessar manualmente,
+// usá un endpoint autenticado separado.

@@ -109,6 +109,15 @@ export function SubscribeButton({ code, interval, children, className, variant =
       });
       if (updErr) throw updErr;
 
+      // Sincronizar también en la tabla profiles (igual que upgrade-to-seller-button)
+      try {
+        const res = await fetch("/api/profile/upgrade-to-seller", { method: "POST" });
+        if (!res.ok) {
+          // No bloqueamos por esto; la metadata ya fue actualizada
+          console.warn("[subscribe-button] profiles sync failed, metadata was updated");
+        }
+      } catch { }
+
       // Asegurar fila en profiles y plan_code por defecto si falta
       try {
         const { data: prof, error: pErr } = await supabase
