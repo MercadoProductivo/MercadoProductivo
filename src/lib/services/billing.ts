@@ -13,13 +13,14 @@ async function sleep(ms: number) {
 }
 
 /**
- * Realiza fetch con timeout y reintentos automáticos para errores transitorios
+ * Realiza fetch con timeout y reintentos automáticos para errores transitorios.
+ * Errores 408/429/5xx se reintentan con backoff exponencial.
  */
 async function request(endpoint: string, options: RequestOptions = {}) {
     const { timeoutMs = 10000, retries = 0, ...init } = options;
     const url = `${MP_API_URL}${endpoint}`;
 
-    let lastError: any;
+    let lastError: unknown;
     for (let attempt = 0; attempt <= retries; attempt++) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -27,28 +28,23 @@ async function request(endpoint: string, options: RequestOptions = {}) {
         try {
             const res = await fetch(url, {
                 ...init,
-                headers: { ...getMPHeaders(), ...init.headers }, // Merge headers, MP headers default
-                signal: controller.signal
+                headers: { ...getMPHeaders(), ...(init.headers as Record<string, string> | undefined) },
+                signal: controller.signal,
             });
             clearTimeout(timer);
 
-            // Si es exitoso o es un error de cliente (4xx) que no sea 408/429, retornamos respuesta.
-            // 408 (Timeout) y 429 (Too Many Requests) se deberían reintentar.
-            // 5xx se reintenta.
             if (res.ok) return res;
 
             const isRetryable = [408, 429, 500, 502, 503, 504].includes(res.status);
             if (!isRetryable || attempt === retries) {
-                // Si no es reintentable o se acabaron los intentos, lanzamos error con detalles
                 const text = await res.text().catch(() => "");
                 throw new Error(`MP Request Failed (${res.status}): ${text}`);
             }
 
-            // Esperar antes de reintentar (backoff exponencial)
+            // Backoff exponencial con jitter
             const delay = Math.min(2000, 300 * 2 ** attempt) + Math.floor(Math.random() * 100);
             await sleep(delay);
-
-        } catch (err: any) {
+        } catch (err: unknown) {
             clearTimeout(timer);
             lastError = err;
             if (attempt === retries) break;
@@ -60,57 +56,99 @@ async function request(endpoint: string, options: RequestOptions = {}) {
     throw lastError || new Error("Unknown fetch error");
 }
 
-export class BillingService {
+/**
+ * Cliente HTTP para la API de MercadoPago.
+ *
+ * Responsabilidad: comunicación con MP (requests, retry, timeout).
+ * NO contiene lógica de negocio — para eso usar BillingService.
+ *
+ * @see services/billing-service.ts
+ */
+export class MPApiClient {
     /**
-     * Obtiene detalles de un pago autorizado por ID
+     * Obtiene detalles de un pago autorizado por ID.
      */
     static async getAuthorizedPayment(paymentId: string) {
-        const res = await request(`/authorized_payments/${paymentId}`, {
+        const res = await request(`/authorized_payments/${encodeURIComponent(paymentId)}`, {
             method: "GET",
             cache: "no-store",
         });
-        return res.json();
+        return res.json() as Promise<Record<string, unknown>>;
     }
 
     /**
-     * Obtiene detalles de una suscripción (preapproval) por ID
+     * Obtiene detalles de una suscripción (preapproval) por ID.
      */
     static async getPreapproval(preapprovalId: string) {
         const res = await request(`/preapproval/${encodeURIComponent(preapprovalId)}`, {
             method: "GET",
             cache: "no-store",
         });
-        return res.json();
+        return res.json() as Promise<Record<string, unknown>>;
     }
 
     /**
-     * Crea una nueva preaprobación (suscripción)
+     * Crea una nueva preaprobación (suscripción).
+     *
+     * Incluye X-Idempotency-Key basado en external_reference para prevenir
+     * duplicados ante reintentos de red.
      */
-    static async createPreapproval(data: Record<string, any>) {
+    static async createPreapproval(data: Record<string, unknown>) {
+        // Idempotency key estable por (userId:planCode:interval) — reintentos devuelven el mismo preapproval
+        const idempotencyKey =
+            typeof data.external_reference === "string" && data.external_reference
+                ? `preapproval-${data.external_reference}`
+                : `preapproval-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
         const res = await request("/preapproval", {
             method: "POST",
             body: JSON.stringify(data),
-            retries: 2, // Reintentar creación en caso de fallos de red
+            headers: { "X-Idempotency-Key": idempotencyKey },
+            retries: 2,
         });
-        return res.json();
+        return res.json() as Promise<Record<string, unknown>>;
     }
 
     /**
-     * Actualiza una preaprobación (ej. cancelar o pausar)
+     * Actualiza el estado de una preaprobación.
+     * Soporta: "authorized" | "cancelled" | "paused"
      */
-    static async updatePreapproval(preapprovalId: string, data: { status: "cancelled" | "paused" }) {
+    static async updatePreapproval(
+        preapprovalId: string,
+        data: { status: "authorized" | "cancelled" | "paused" } & Record<string, unknown>,
+    ) {
         const res = await request(`/preapproval/${encodeURIComponent(preapprovalId)}`, {
             method: "PUT",
             body: JSON.stringify(data),
             retries: 2,
         });
-        return res.json();
+        return res.json() as Promise<Record<string, unknown>>;
     }
 
     /**
-     * Cancela explícitamente una preaprobación
+     * Cancela explícitamente una preaprobación.
      */
     static async cancelPreapproval(preapprovalId: string) {
         return this.updatePreapproval(preapprovalId, { status: "cancelled" });
     }
+
+    /**
+     * Pausa una preaprobación (ej. en downgrade pendiente de renovación).
+     */
+    static async pausePreapproval(preapprovalId: string) {
+        return this.updatePreapproval(preapprovalId, { status: "paused" });
+    }
+
+    /**
+     * Re-activa una preaprobación pausada.
+     */
+    static async authorizePreapproval(preapprovalId: string) {
+        return this.updatePreapproval(preapprovalId, { status: "authorized" });
+    }
 }
+
+// ── Re-export de compatibilidad ────────────────────────────────────────────────
+// Permite que código legacy que importaba BillingService desde este módulo
+// siga funcionando sin cambios hasta ser migrado.
+/** @deprecated Usar MPApiClient directamente */
+export { MPApiClient as BillingService };

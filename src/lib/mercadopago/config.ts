@@ -50,6 +50,11 @@ let cachedConfig: MPConfig | null = null;
  * Previene mezclas peligrosas de tokens test/prod
  */
 export function getMPConfig(): MPConfig {
+  // C3: Invalidar caché si el token de entorno cambió (ej. rotación sin reinicio)
+  const currentToken = process.env.MP_ACCESS_TOKEN || "";
+  if (cachedConfig && cachedConfig.accessToken !== currentToken) {
+    cachedConfig = null;
+  }
   if (cachedConfig) return cachedConfig;
 
   const accessToken = process.env.MP_ACCESS_TOKEN || "";

@@ -56,9 +56,9 @@ export function UsageRadial({
             >
               <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
               <RadialBar
-                background
+                background={{ fill: "#D1D5DB" }}
                 dataKey="value"
-                fill={hasCap ? color : "#E5E7EB"}
+                fill={hasCap ? color : "#9CA3AF"}
                 cornerRadius={50}
                 isAnimationActive
                 animationDuration={700}
@@ -109,9 +109,9 @@ export function UsageRadial({
           >
             <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
             <RadialBar
-              background
+              background={{ fill: "#D1D5DB" }}
               dataKey="value"
-              fill={hasCap ? color : "#E5E7EB"}
+              fill={hasCap ? color : "#9CA3AF"}
               cornerRadius={50}
               isAnimationActive
               animationDuration={700}

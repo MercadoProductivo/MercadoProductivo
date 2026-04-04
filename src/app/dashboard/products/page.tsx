@@ -39,11 +39,10 @@ export default async function ProductsDashboardPage() {
         postal_code: "CP",
       };
       Object.entries(requiredMap).forEach(([key, label]) => {
-        // @ts-ignore
-        if (!data?.[key] || String(data?.[key]).trim().length === 0) missingLabels.push(label);
+        const val = (data as Record<string, unknown>)?.[key];
+        if (!val || String(val).trim().length === 0) missingLabels.push(label);
       });
       // Plan actual (si existe)
-      // @ts-ignore
       planCode = (data?.plan_code || "").toString() || null;
     }
   } catch {}
@@ -63,22 +62,20 @@ export default async function ProductsDashboardPage() {
   // Construir mapa de imagen principal por producto desde product_images
   const primaryImageMap: Record<string, string | null> = {};
   try {
-    const ids = (products ?? []).map((p: any) => p.id);
-    if (ids.length) {
-      const { data: imgs } = await supabase
-        .from("product_images")
-        .select("product_id,id,url")
-        .in("product_id", ids)
-        .order("id", { ascending: true });
-      for (const row of imgs || []) {
-        // Tomar la primera imagen por product_id
-        // @ts-ignore
-        if (!primaryImageMap[row.product_id]) {
-          // @ts-ignore
-          primaryImageMap[row.product_id] = row.url as string;
+        const ids = (products ?? []).map((p) => p.id);
+        if (ids.length) {
+          const { data: imgs } = await supabase
+            .from("product_images")
+            .select("product_id,id,url")
+            .in("product_id", ids)
+            .order("id", { ascending: true });
+          for (const row of imgs || []) {
+            // Tomar la primera imagen por product_id
+            if (row.product_id && !primaryImageMap[row.product_id]) {
+              primaryImageMap[row.product_id] = row.url ?? null;
+            }
+          }
         }
-      }
-    }
   } catch {}
 
   // Resolver límite de productos del plan
@@ -90,7 +87,7 @@ export default async function ProductsDashboardPage() {
         .select("max_products")
         .eq("code", planCode)
         .maybeSingle();
-      const mp = (plan as any)?.max_products;
+      const mp = plan?.max_products;
       maxProducts = typeof mp === "number" ? mp : (mp != null ? Number(mp) : null);
     } catch {}
   }
@@ -109,7 +106,7 @@ export default async function ProductsDashboardPage() {
 
   // Ordenar en memoria: destacados vigentes primero, luego por fecha de creación desc
   const nowDate = new Date();
-  const sortedProducts = (products ?? []).slice().sort((a: any, b: any) => {
+  const sortedProducts = (products ?? []).slice().sort((a, b) => {
     const aFeat = a?.featured_until && new Date(a.featured_until) > nowDate ? 1 : 0;
     const bFeat = b?.featured_until && new Date(b.featured_until) > nowDate ? 1 : 0;
     if (aFeat !== bFeat) return bFeat - aFeat; // primero destacados
@@ -154,12 +151,9 @@ export default async function ProductsDashboardPage() {
         <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 space-y-1">
           <div>No se pudieron cargar tus anuncios: {productsError.message}</div>
           {(() => {
-            // @ts-ignore
-            const code = (productsError as any)?.code;
-            // @ts-ignore
-            const details = (productsError as any)?.details;
-            // @ts-ignore
-            const hint = (productsError as any)?.hint;
+            // PostgrestError tiene code, details y hint documentados
+            const pgErr = productsError as { message: string; code?: string; details?: string; hint?: string };
+            const { code, details, hint } = pgErr;
             if (code || details || hint) {
               return (
                 <pre className="whitespace-pre-wrap break-words text-xs">
@@ -180,7 +174,7 @@ export default async function ProductsDashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {sortedProducts.map((p: any) => (
+          {sortedProducts.map((p) => (
             <div key={p.id} className="overflow-hidden rounded border bg-background">
               <div className="relative h-32 w-full sm:h-40">
                 {primaryImageMap[p.id] ? (

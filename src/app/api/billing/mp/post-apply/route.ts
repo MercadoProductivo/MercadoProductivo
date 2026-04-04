@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { createRouteClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getMPConfig, getMPHeaders } from "@/lib/mercadopago/config";
+import { getMPConfig } from "@/lib/mercadopago/config";
+import { MPApiClient } from "@/lib/services/billing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 10000) {
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(t));
-}
 
 export async function POST() {
   const supabase = await createRouteClient();
@@ -53,66 +49,51 @@ export async function POST() {
   let nextRenewsAt: string | null = null;
   if (newPreId) {
     try {
-      const putRes = await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${newPreId}`, {
-        method: "PUT",
-        headers: getMPHeaders(),
-        body: JSON.stringify({ status: "authorized" }),
-      }, 10000);
-      if (putRes.ok) {
-        resumed = true;
-        // Obtener detalles del preapproval para calcular próxima renovación
-        try {
-          const getRes = await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${newPreId}`, {
-            method: "GET",
-            headers: getMPHeaders(),
-          }, 10000);
-          if (getRes.ok) {
-            const pre = await getRes.json();
-            const now = new Date();
-            const renews = new Date(now);
-            const freq = (pre?.auto_recurring?.frequency as number | undefined) ?? 1;
-            const ftype = (pre?.auto_recurring?.frequency_type as string | undefined) ?? "months";
-            if (ftype === "months") {
-              renews.setMonth(renews.getMonth() + (typeof freq === "number" && freq > 0 ? freq : 1));
-            } else if (ftype === "days") {
-              renews.setDate(renews.getDate() + (typeof freq === "number" && freq > 0 ? freq : 30));
-            } else {
-              renews.setMonth(renews.getMonth() + 1);
-            }
-            nextRenewsAt = renews.toISOString();
-          }
-        } catch {}
-        await admin
-          .from("profiles")
-          .update({ mp_preapproval_id: newPreId, mp_subscription_status: "authorized", ...(nextRenewsAt ? { plan_renews_at: nextRenewsAt } : {}) })
-          .eq("id", user.id);
-        try {
-          await admin.from("billing_events").insert({
-            user_id: user.id,
-            kind: "preapproval_resumed_on_post_apply",
-            payload: { preapproval_id: newPreId, renews_at: nextRenewsAt },
-          } as any);
-        } catch {}
-      }
+      // C2: usar MPApiClient.authorizePreapproval en vez de fetch directo
+      await MPApiClient.authorizePreapproval(newPreId);
+      resumed = true;
+      // Obtener detalles del preapproval para calcular próxima renovación
+      try {
+        const pre = await MPApiClient.getPreapproval(newPreId);
+        const now = new Date();
+        const renews = new Date(now);
+        const freq = (pre.auto_recurring as Record<string, unknown> | undefined)?.frequency as number | undefined ?? 1;
+        const ftype = (pre.auto_recurring as Record<string, unknown> | undefined)?.frequency_type as string | undefined ?? "months";
+        if (ftype === "months") {
+          renews.setMonth(renews.getMonth() + (typeof freq === "number" && freq > 0 ? freq : 1));
+        } else if (ftype === "days") {
+          renews.setDate(renews.getDate() + (typeof freq === "number" && freq > 0 ? freq : 30));
+        } else {
+          renews.setMonth(renews.getMonth() + 1);
+        }
+        nextRenewsAt = renews.toISOString();
+      } catch {}
+
+      await admin
+        .from("profiles")
+        .update({ mp_preapproval_id: newPreId, mp_subscription_status: "authorized", ...(nextRenewsAt ? { plan_renews_at: nextRenewsAt } : {}) })
+        .eq("id", user.id);
+      try {
+        await admin.from("billing_events").insert({
+          user_id: user.id,
+          kind: "preapproval_resumed_on_post_apply",
+          payload: { preapproval_id: newPreId, renews_at: nextRenewsAt },
+        } as any);
+      } catch {}
     } catch {}
   }
 
   if (resumed && oldPreId && oldPreId !== newPreId) {
     try {
-      const cancelRes = await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${oldPreId}`, {
-        method: "PUT",
-        headers: getMPHeaders(),
-        body: JSON.stringify({ status: "cancelled" }),
-      }, 10000);
-      if (cancelRes.ok) {
-        try {
-          await admin.from("billing_events").insert({
-            user_id: user.id,
-            kind: "preapproval_cancelled_on_post_apply",
-            payload: { previous_preapproval_id: oldPreId },
-          } as any);
-        } catch {}
-      }
+      // C2: usar MPApiClient.cancelPreapproval en vez de fetch directo
+      await MPApiClient.cancelPreapproval(oldPreId);
+      try {
+        await admin.from("billing_events").insert({
+          user_id: user.id,
+          kind: "preapproval_cancelled_on_post_apply",
+          payload: { previous_preapproval_id: oldPreId } as any,
+        } as any);
+      } catch {}
     } catch {}
   }
 

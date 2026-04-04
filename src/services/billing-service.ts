@@ -1,11 +1,42 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getMPConfig, getMPHeaders } from "@/lib/mercadopago/config";
+import { getMPConfig } from "@/lib/mercadopago/config";
 import { logger } from "@/lib/logger";
+import { MPApiClient } from "@/lib/services/billing";
+import type { Json } from "@/types/database.types";
 
-function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 10000) {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
-    return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(t));
+/** Regex para validar UUID v4 (I2 — previene inyección de IDs malformados) */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Convierte un objeto a tipo Json de Supabase de forma segura.
+ */
+function toJson(obj: Record<string, unknown>): Json {
+    return obj as unknown as Json;
+}
+
+/**
+ * Extrae y valida userId, planCode y interval de un external_reference MP.
+ * Formato esperado: "<uuid>:<plan_code>:<interval>"
+ */
+function parseExternalRef(externalRef: string | null | undefined): {
+    userId: string | null;
+    planCode: string | null;
+    refInterval: string | null;
+} {
+    if (typeof externalRef !== "string" || !externalRef.includes(":")) {
+        return { userId: null, planCode: null, refInterval: null };
+    }
+    const parts = externalRef.split(":");
+    const candidateId = parts[0] || "";
+    const userId = UUID_RE.test(candidateId) ? candidateId : null;
+    if (!userId && candidateId) {
+        logger.warn("[BillingService] external_reference userId no es UUID válido", { externalRef, candidateId });
+    }
+    return {
+        userId,
+        planCode: parts[1] || null,
+        refInterval: parts[2] || null,
+    };
 }
 
 export class BillingService {
@@ -14,37 +45,25 @@ export class BillingService {
         const admin = createAdminClient();
         const { data } = await admin
             .from("plans")
-            .select("code, price_monthly, price_monthly_cents")
+            .select("code, price_monthly_cents")
             .eq("code", code)
             .maybeSingle();
 
-        const toNum = (v: any): number | null => {
-            if (typeof v === "number" && Number.isFinite(v)) return v;
-            if (typeof v === "string" && v.trim().length > 0) {
-                const n = Number(v);
-                return Number.isFinite(n) ? n : null;
-            }
-            return null;
-        };
-
-        // Using any cast here since database types might interpret numeric columns as number|string depending on driver
-        const pm = toNum((data as any)?.price_monthly);
-        const pmc = toNum((data as any)?.price_monthly_cents);
-        const monthly = pm != null ? pm : (pmc != null ? pmc / 100 : null);
-        return monthly != null ? monthly : 0;
+        const cents = data?.price_monthly_cents;
+        return typeof cents === "number" && Number.isFinite(cents) ? cents / 100 : 0;
     }
 
     static async processPreapproval(preapprovalId: string) {
         const admin = createAdminClient();
         try {
-            getMPConfig(); // Force config check
+            getMPConfig();
         } catch (error) {
             try {
                 await admin.from("billing_events").insert({
                     user_id: null,
                     kind: "preapproval_webhook_missing_token",
-                    payload: { preapproval_id: preapprovalId, error: String(error) }, // Payload is jsonb, fine to pass object
-                } as any);
+                    payload: toJson({ preapproval_id: preapprovalId, error: String(error) }),
+                });
             } catch (insertErr) {
                 logger.error("[Webhook] Failed to log missing_token event", { preapprovalId, error: insertErr });
             }
@@ -52,50 +71,47 @@ export class BillingService {
         }
 
         try {
-            const res = await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
-                method: "GET",
-                headers: getMPHeaders(),
-                cache: "no-store",
-            }, 10000);
-
-            if (!res.ok) {
-                const text = await res.text().catch(() => "");
+            // ── Fetch preapproval via MPApiClient (retry + timeout centralizados) ──
+            let pre: Record<string, unknown>;
+            try {
+                pre = await MPApiClient.getPreapproval(preapprovalId);
+            } catch (fetchErr: unknown) {
+                const details = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
                 try {
                     await admin.from("billing_events").insert({
                         user_id: null,
                         kind: "preapproval_webhook_fetch_failed",
-                        payload: { preapproval_id: preapprovalId, details: text || null },
-                    } as any);
+                        payload: toJson({ preapproval_id: preapprovalId, details }),
+                    });
                 } catch (insertErr) {
                     logger.error("[Webhook] Failed to log fetch_failed event", { preapprovalId, error: insertErr });
                 }
                 return;
             }
 
-            const pre = await res.json();
-            const status = (pre?.status as string | undefined) || null;
-            const externalRef = (pre?.external_reference as string | undefined) || null;
-            const id = (pre?.id as string | undefined) || preapprovalId;
-            const reason = (pre?.reason as string | undefined) || null;
-            const auto = (pre?.auto_recurring as any) || {};
-            const freq = (auto?.frequency as number | undefined) ?? null;
-            const ftype = (auto?.frequency_type as string | undefined) ?? null;
-            const amount = (auto?.transaction_amount as number | undefined) ?? null;
-            const currency_id = (auto?.currency_id as string | undefined) ?? null;
+            const status = (pre.status as string | undefined) || null;
+            const externalRef = (pre.external_reference as string | undefined) || null;
+            const id = (pre.id as string | undefined) || preapprovalId;
+            const reason = (pre.reason as string | undefined) || null;
+            const auto = (pre.auto_recurring as Record<string, unknown>) || {};
+            const freq = (auto.frequency as number | undefined) ?? null;
+            const ftype = (auto.frequency_type as string | undefined) ?? null;
+            const amount = (auto.transaction_amount as number | undefined) ?? null;
+            const currency_id = (auto.currency_id as string | undefined) ?? null;
 
-            let userId: string | null = null;
-            let planCode: string | null = null;
-            let refInterval: string | null = null;
-
-            if (typeof externalRef === "string" && externalRef.includes(":")) {
-                const parts = externalRef.split(":");
-                userId = parts[0] || null;
-                planCode = parts[1] || null;
-                refInterval = parts[2] || null;
-            }
+            const { userId, planCode, refInterval } = parseExternalRef(externalRef);
 
             // Cargar perfil actual
-            let profile: any | null = null;
+            let profile: {
+                id: string;
+                plan_code: string | null;
+                plan_activated_at: string | null;
+                plan_renews_at: string | null;
+                plan_pending_code: string | null;
+                plan_pending_effective_at: string | null;
+                mp_preapproval_id: string | null;
+                mp_subscription_status: string | null;
+            } | null = null;
             if (userId) {
                 const { data: p } = await admin
                     .from("profiles")
@@ -110,7 +126,7 @@ export class BillingService {
                 try {
                     await admin
                         .from("profiles")
-                        .update({ mp_subscription_status: status as any }) // status usually string, but strictly typed column might be enum
+                        .update({ mp_subscription_status: status })
                         .eq("id", userId);
                 } catch (updateErr) {
                     logger.error("[Webhook] Failed to sync subscription status", { userId, id, status, error: updateErr });
@@ -124,11 +140,11 @@ export class BillingService {
                     if (!alreadyPending) {
                         const { data: freePlan } = await admin
                             .from("plans")
-                            .select("code, price_monthly, price_monthly_cents")
+                            .select("code, price_monthly_cents")
                             .eq("code", "free")
                             .limit(1)
                             .maybeSingle();
-                        const freeCode = (freePlan as any)?.code || "free";
+                        const freeCode = freePlan?.code || "free";
 
                         let effectiveAt = new Date();
                         let isImmediate = true;
@@ -148,7 +164,6 @@ export class BillingService {
                         }
 
                         if (isImmediate) {
-                            // Aplicar cambio ahora mismo — no hay período activo
                             await admin
                                 .from("profiles")
                                 .update({
@@ -156,17 +171,16 @@ export class BillingService {
                                     plan_pending_code: null,
                                     plan_pending_effective_at: null,
                                     plan_activated_at: new Date().toISOString(),
-                                    mp_subscription_status: "cancelled" as any,
+                                    mp_subscription_status: "cancelled",
                                 })
                                 .eq("id", userId);
                         } else {
-                            // Programar cambio para fin de ciclo
                             await admin
                                 .from("profiles")
                                 .update({
                                     plan_pending_code: freeCode,
                                     plan_pending_effective_at: effectiveAt.toISOString(),
-                                    mp_subscription_status: "cancelled" as any,
+                                    mp_subscription_status: "cancelled",
                                 })
                                 .eq("id", userId);
                         }
@@ -175,8 +189,8 @@ export class BillingService {
                             await admin.from("billing_events").insert({
                                 user_id: userId,
                                 kind: isImmediate ? "plan_downgraded_to_free_immediate" : "subscription_cancelled_by_mp",
-                                payload: { preapproval_id: id, plan_pending_code: freeCode, effective_at: effectiveAt.toISOString(), immediate: isImmediate },
-                            } as any);
+                                payload: toJson({ preapproval_id: id, plan_pending_code: freeCode, effective_at: effectiveAt.toISOString(), immediate: isImmediate }),
+                            });
                         } catch (insertErr) {
                             logger.error("[Webhook] Failed to log cancellation event", { userId, id, error: insertErr });
                         }
@@ -190,7 +204,7 @@ export class BillingService {
             if (!userId) {
                 await admin
                     .from("profiles")
-                    .update({ mp_subscription_status: status as any })
+                    .update({ mp_subscription_status: status })
                     .eq("mp_preapproval_id", id);
             }
 
@@ -220,7 +234,7 @@ export class BillingService {
                             plan_activated_at: now.toISOString(),
                             plan_renews_at: renews.toISOString(),
                             mp_preapproval_id: id,
-                            mp_subscription_status: status as any,
+                            mp_subscription_status: status,
                         })
                         .eq("id", userId)
                         .select("id, plan_code, mp_preapproval_id")
@@ -231,50 +245,45 @@ export class BillingService {
                             await admin.from("billing_events").insert({
                                 user_id: userId,
                                 kind: "preapproval_profile_update_failed",
-                                payload: {
+                                payload: toJson({
                                     preapproval_id: id,
                                     target_plan_code: planCode,
-                                    error: (updErr as any)?.message || null,
+                                    error: updErr?.message || null,
                                     updated: updProfile || null,
-                                },
-                            } as any);
+                                }),
+                            });
                         } catch { }
                     } else {
                         try {
                             await admin.from("billing_events").insert({
                                 user_id: userId,
                                 kind: "preapproval_profile_update_ok",
-                                payload: {
+                                payload: toJson({
                                     preapproval_id: id,
                                     plan_code: updProfile.plan_code,
                                     mp_preapproval_id: updProfile.mp_preapproval_id,
-                                },
-                            } as any);
+                                }),
+                            });
                         } catch { }
                     }
 
-                    // Cancelar anterior
+                    // Cancelar preapproval anterior vía MPApiClient
                     const oldPreId = profile?.mp_preapproval_id && profile.mp_preapproval_id !== id ? profile.mp_preapproval_id : null;
                     if (oldPreId) {
                         try {
-                            await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${oldPreId}`, {
-                                method: "PUT",
-                                headers: getMPHeaders(),
-                                body: JSON.stringify({ status: "cancelled" }),
-                            }, 10000);
-
+                            await MPApiClient.cancelPreapproval(oldPreId);
                             await admin.from("billing_events").insert({
                                 user_id: userId,
                                 kind: "preapproval_cancelled_on_upgrade",
-                                payload: {
+                                payload: toJson({
                                     previous_preapproval_id: oldPreId,
                                     new_preapproval_id: id,
                                     frequency: freq,
-                                    amount: amount,
+                                    amount,
                                     interval: refInterval,
-                                    reason: reason,
-                                },
-                            } as any);
+                                    reason,
+                                }),
+                            });
                         } catch { }
                     }
 
@@ -282,51 +291,25 @@ export class BillingService {
                         await admin.from("billing_events").insert({
                             user_id: userId,
                             kind: "plan_upgraded_immediate",
-                            payload: {
-                                preapproval_id: id,
-                                plan_code: planCode,
-                                frequency: freq,
-                                amount: amount,
-                                interval: refInterval,
-                                reason: reason,
-                            },
-                        } as any);
+                            payload: toJson({ preapproval_id: id, plan_code: planCode, frequency: freq, amount, interval: refInterval, reason }),
+                        });
                     } catch { }
                 } else {
-                    // Downgrade logic
+                    // Downgrade logic — pausar nueva preapproval vía MPApiClient
                     try {
-                        await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${id}`, {
-                            method: "PUT",
-                            headers: getMPHeaders(),
-                            body: JSON.stringify({ status: "paused" }),
-                        }, 10000);
-
+                        await MPApiClient.pausePreapproval(id);
                         await admin.from("billing_events").insert({
                             user_id: userId,
                             kind: "preapproval_paused_on_downgrade",
-                            payload: {
-                                preapproval_id: id,
-                                target_plan_code: planCode,
-                                frequency: freq,
-                                amount: amount,
-                                interval: refInterval,
-                                reason: reason,
-                            },
-                        } as any);
+                            payload: toJson({ preapproval_id: id, target_plan_code: planCode, frequency: freq, amount, interval: refInterval, reason }),
+                        });
                     } catch { }
                     try {
                         await admin.from("billing_events").insert({
                             user_id: userId,
                             kind: "plan_downgrade_scheduled_keep_current_until_renewal",
-                            payload: {
-                                preapproval_id: id,
-                                target_plan_code: planCode,
-                                frequency: freq,
-                                amount: amount,
-                                interval: refInterval,
-                                reason: reason,
-                            },
-                        } as any);
+                            payload: toJson({ preapproval_id: id, target_plan_code: planCode, frequency: freq, amount, interval: refInterval, reason }),
+                        });
                     } catch { }
                 }
             }
@@ -335,17 +318,18 @@ export class BillingService {
                 await admin.from("billing_events").insert({
                     user_id: userId,
                     kind: "preapproval_webhook",
-                    payload: { preapproval_id: id, status, external_reference: externalRef, plan_code: planCode, interval: refInterval, amount, currency_id, frequency: freq, frequency_type: ftype, reason },
-                } as any);
+                    payload: toJson({ preapproval_id: id, status, external_reference: externalRef, plan_code: planCode, interval: refInterval, amount, currency_id, frequency: freq, frequency_type: ftype, reason }),
+                });
             } catch { }
 
-        } catch (e: any) {
+        } catch (e: unknown) {
+            const errMsg = e instanceof Error ? e.message : String(e);
             try {
                 await admin.from("billing_events").insert({
                     user_id: null,
                     kind: "preapproval_webhook_exception",
-                    payload: { preapproval_id: preapprovalId, error: e?.message || String(e) },
-                } as any);
+                    payload: toJson({ preapproval_id: preapprovalId, error: errMsg }),
+                });
             } catch { }
         }
     }
@@ -359,36 +343,33 @@ export class BillingService {
                 await admin.from("billing_events").insert({
                     user_id: null,
                     kind: "authorized_payment_webhook_missing_token",
-                    payload: { payment_id: paymentId, error: String(error) },
-                } as any);
+                    payload: toJson({ payment_id: paymentId, error: String(error) }),
+                });
             } catch { }
             return;
         }
 
         try {
-            const payRes = await fetchWithTimeout(`https://api.mercadopago.com/authorized_payments/${paymentId}`, {
-                method: "GET",
-                headers: getMPHeaders(),
-                cache: "no-store",
-            }, 10000);
-
-            if (!payRes.ok) {
-                const text = await payRes.text().catch(() => "");
+            // ── Fetch authorized_payment via MPApiClient ──────────────────────
+            let payment: Record<string, unknown>;
+            try {
+                payment = await MPApiClient.getAuthorizedPayment(paymentId);
+            } catch (fetchErr: unknown) {
+                const details = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
                 try {
                     await admin.from("billing_events").insert({
                         user_id: null,
                         kind: "authorized_payment_fetch_failed",
-                        payload: { payment_id: paymentId, details: text || null },
-                    } as any);
+                        payload: toJson({ payment_id: paymentId, details }),
+                    });
                 } catch { }
                 return;
             }
 
-            const payment = await payRes.json();
-            const status = (payment?.status as string | undefined) || null;
-            const statusDetail = (payment?.status_detail as string | undefined) || null;
-            const preapprovalId = (payment?.preapproval_id as string | undefined)
-                || (payment?.preapproval?.id as string | undefined)
+            const status = (payment.status as string | undefined) || null;
+            const statusDetail = (payment.status_detail as string | undefined) || null;
+            const preapprovalId = (payment.preapproval_id as string | undefined)
+                || ((payment.preapproval as Record<string, unknown> | undefined)?.id as string | undefined)
                 || undefined;
 
             const isSuccess =
@@ -400,16 +381,15 @@ export class BillingService {
                     await admin.from("billing_events").insert({
                         user_id: null,
                         kind: "subscription_payment_failed",
-                        payload: {
+                        payload: toJson({
                             payment_id: paymentId,
                             preapproval_id: preapprovalId || null,
                             status,
                             status_detail: statusDetail,
-                            amount: (payment?.transaction_amount ?? payment?.amount ?? null) as number | null,
-                            currency_id: (payment?.currency_id ?? null) as string | null,
-                            raw: payment || null,
-                        },
-                    } as any);
+                            amount: (payment.transaction_amount ?? payment.amount ?? null) as number | null,
+                            currency_id: (payment.currency_id ?? null) as string | null,
+                        }),
+                    });
                 } catch { }
                 return;
             }
@@ -419,41 +399,35 @@ export class BillingService {
                     await admin.from("billing_events").insert({
                         user_id: null,
                         kind: "authorized_payment_missing_preapproval",
-                        payload: { payment_id: paymentId, raw: payment || null },
-                    } as any);
+                        payload: toJson({ payment_id: paymentId }),
+                    });
                 } catch { }
                 return;
             }
 
-            const preRes = await fetchWithTimeout(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
-                method: "GET",
-                headers: getMPHeaders(),
-                cache: "no-store",
-            }, 10000);
-
-            if (!preRes.ok) {
-                const text = await preRes.text().catch(() => "");
+            // ── Fetch preapproval para calcular renovación ────────────────────
+            let pre: Record<string, unknown>;
+            try {
+                pre = await MPApiClient.getPreapproval(preapprovalId);
+            } catch (fetchErr: unknown) {
+                const details = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
                 try {
                     await admin.from("billing_events").insert({
                         user_id: null,
                         kind: "authorized_payment_preapproval_fetch_failed",
-                        payload: { payment_id: paymentId, preapproval_id: preapprovalId, details: text || null },
-                    } as any);
+                        payload: toJson({ payment_id: paymentId, preapproval_id: preapprovalId, details }),
+                    });
                 } catch { }
                 return;
             }
 
-            const pre = await preRes.json();
-            const externalRef = (pre?.external_reference as string | undefined) || null;
-            const auto = (pre?.auto_recurring as any) || {};
-            const freq = (auto?.frequency as number | undefined) ?? 1;
-            const ftype = (auto?.frequency_type as string | undefined) ?? "months";
+            const externalRef = (pre.external_reference as string | undefined) || null;
+            const auto = (pre.auto_recurring as Record<string, unknown>) || {};
+            const freq = (auto.frequency as number | undefined) ?? 1;
+            const ftype = (auto.frequency_type as string | undefined) ?? "months";
 
-            let userId: string | null = null;
-            if (typeof externalRef === "string" && externalRef.includes(":")) {
-                const parts = externalRef.split(":");
-                userId = parts[0] || null;
-            }
+            // Validar UUID del userId (I2)
+            const { userId } = parseExternalRef(externalRef);
 
             const now = new Date();
             const renews = new Date(now);
@@ -469,12 +443,12 @@ export class BillingService {
             if (userId) {
                 await admin
                     .from("profiles")
-                    .update({ plan_renews_at: nextRenewsAt, mp_subscription_status: "authorized" as any })
+                    .update({ plan_renews_at: nextRenewsAt, mp_subscription_status: "authorized" })
                     .eq("id", userId);
             } else {
                 await admin
                     .from("profiles")
-                    .update({ plan_renews_at: nextRenewsAt, mp_subscription_status: "authorized" as any })
+                    .update({ plan_renews_at: nextRenewsAt, mp_subscription_status: "authorized" })
                     .eq("mp_preapproval_id", preapprovalId);
             }
 
@@ -490,21 +464,22 @@ export class BillingService {
                     targetUserId = prof?.id || null;
                 }
                 if (targetUserId) {
-                    const { data: credited, error: refillError } = await (admin.rpc as any)("refill_monthly_credits", { p_user: targetUserId });
+                    // @ts-expect-error -- 'refill_monthly_credits' es RPC Postgres no tipado aún
+                    const { data: credited, error: refillError } = await admin.rpc("refill_monthly_credits", { p_user: targetUserId });
                     try {
                         await admin.from("billing_events").insert({
                             user_id: targetUserId,
                             kind: "credits_refilled_on_renewal",
-                            payload: { payment_id: paymentId, preapproval_id: preapprovalId, credited: credited ?? null },
-                        } as any);
+                            payload: toJson({ payment_id: paymentId, preapproval_id: preapprovalId, credited: credited ?? null }),
+                        });
                     } catch { }
                     if (refillError) {
                         try {
                             await admin.from("billing_events").insert({
                                 user_id: targetUserId,
                                 kind: "credits_refill_error",
-                                payload: { payment_id: paymentId, preapproval_id: preapprovalId, error: (refillError as any)?.message || null },
-                            } as any);
+                                payload: toJson({ payment_id: paymentId, preapproval_id: preapprovalId, error: refillError.message || null }),
+                            });
                         } catch { }
                     }
                 }
@@ -514,26 +489,27 @@ export class BillingService {
                 await admin.from("billing_events").insert({
                     user_id: userId,
                     kind: "subscription_renewed",
-                    payload: {
+                    payload: toJson({
                         payment_id: paymentId,
                         preapproval_id: preapprovalId,
-                        amount: (payment?.transaction_amount ?? payment?.amount ?? null) as number | null,
-                        currency_id: (payment?.currency_id ?? null) as string | null,
+                        amount: (payment.transaction_amount ?? payment.amount ?? null) as number | null,
+                        currency_id: (payment.currency_id ?? null) as string | null,
                         frequency: freq,
                         frequency_type: ftype,
                         status,
                         status_detail: statusDetail,
-                    },
-                } as any);
+                    }),
+                });
             } catch { }
 
-        } catch (e: any) {
+        } catch (e: unknown) {
+            const errMsg = e instanceof Error ? e.message : String(e);
             try {
                 await admin.from("billing_events").insert({
                     user_id: null,
                     kind: "authorized_payment_exception",
-                    payload: { payment_id: paymentId, error: e?.message || String(e) },
-                } as any);
+                    payload: toJson({ payment_id: paymentId, error: errMsg }),
+                });
             } catch { }
         }
     }

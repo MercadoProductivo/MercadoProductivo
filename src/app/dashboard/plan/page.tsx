@@ -10,6 +10,19 @@ import { headers } from "next/headers";
 import PlanBadge from "@/components/badges/plan-badge";
 import CancelSubscriptionButton from "./cancel-button";
 import { normalizeRoleFromMetadata } from "@/lib/auth/role";
+import { PlanSelector } from "@/components/billing/plan-selector";
+import { sortPlans } from "@/lib/pricing";
+import type { PlanRow } from "@/lib/pricing";
+import {
+  Package,
+  Briefcase,
+  Coins,
+  ImageIcon,
+  AlertCircle,
+  CalendarDays,
+  RefreshCw,
+  Clock,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,13 +42,95 @@ function formatDate(d?: string | null) {
   }
 }
 
+/** Barra de progreso simple para métricas */
+function UsageBar({ used, max, label, icon: Icon }: {
+  used: number;
+  max: number | null;
+  label: string;
+  icon: React.ElementType;
+}) {
+  const pct = max != null && max > 0 ? Math.min(100, (used / max) * 100) : null;
+  const isHigh = pct != null && pct >= 80;
+  const isFull = pct != null && pct >= 100;
+
+  return (
+    <div className="rounded-xl border bg-card p-4 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Icon className="h-3.5 w-3.5" />
+          {label}
+        </div>
+        <span className="text-sm font-semibold tabular-nums">
+          {used}
+          {max != null ? `/${max}` : ""}
+        </span>
+      </div>
+      {pct != null && (
+        <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${
+              isFull
+                ? "bg-red-500"
+                : isHigh
+                ? "bg-orange-400"
+                : "bg-emerald-500"
+            }`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
+      {max == null && (
+        <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+          <div className="h-full w-full bg-emerald-400 rounded-full" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Tarjeta de dato simple (sin barra) */
+function InfoCard({ label, value, icon: Icon }: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="rounded-xl border bg-card p-4 flex items-start gap-3">
+      <div className="mt-0.5 rounded-md bg-muted p-1.5">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+      <div>
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="text-sm font-semibold">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+/** Label amigable del plan */
+const PLAN_LABEL_MAP: Record<string, string> = {
+  free: "Básico",
+  basic: "Básico",
+  gratis: "Básico",
+  plus: "Plus",
+  enterprise: "Plus",
+  premium: "Plus",
+  pro: "Plus",
+  deluxe: "Deluxe",
+  diamond: "Deluxe",
+};
+
+function friendlyPlanLabel(code: string | null | undefined, fallback?: string | null) {
+  const lc = (code || "").toLowerCase();
+  return PLAN_LABEL_MAP[lc] || fallback || code || "Sin plan";
+}
+
 export default async function PlanPage({ searchParams }: Props) {
   const sp = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  // Intervalo de suscripción (monthly/yearly). Default: monthly
   const intervalRaw = getParam(sp?.interval);
   const interval = intervalRaw === "yearly" ? "yearly" : "monthly";
   const hasInterval = intervalRaw === "yearly" || intervalRaw === "monthly";
@@ -49,18 +144,15 @@ export default async function PlanPage({ searchParams }: Props) {
 
   let didApplyPending = false;
 
-  // Mostrar mensaje de éxito cuando venimos de una cancelación correcta
   const cancelParam = getParam(sp?.cancel);
   const showCancelSuccess = cancelParam === "1";
   const mpParam = getParam(sp?.mp);
   const showMpWarning = showCancelSuccess && mpParam === "0";
 
-  // Si hay un cambio programado vencido, aplicarlo de forma perezosa
   if (profile?.plan_pending_code && profile?.plan_pending_effective_at) {
     const now = new Date();
     const eff = new Date(profile.plan_pending_effective_at);
     if (!Number.isNaN(eff.getTime()) && now >= eff) {
-      // Sólo aplicar si no hay preapproval de MP o si está autorizado
       const hasPreapproval = !!(profile as any)?.mp_preapproval_id;
       const mpStatus = (profile as any)?.mp_subscription_status || null;
       const canApply = !hasPreapproval || mpStatus === "authorized";
@@ -79,7 +171,6 @@ export default async function PlanPage({ searchParams }: Props) {
           })
           .eq("id", user.id);
         didApplyPending = true;
-        // refrescar perfil
         const { data: refreshed } = await supabase
           .from("profiles")
           .select("plan_code, role_code, updated_at, plan_activated_at, plan_renews_at, plan_pending_code, plan_pending_effective_at, mp_subscription_status, mp_preapproval_id")
@@ -90,7 +181,6 @@ export default async function PlanPage({ searchParams }: Props) {
     }
   }
 
-  // Si aplicamos cambio programado en esta solicitud, notificar al backend para alternar preapprovals (reanudar nuevo y cancelar anterior)
   if (didApplyPending) {
     try {
       const h2 = await headers();
@@ -103,29 +193,24 @@ export default async function PlanPage({ searchParams }: Props) {
   }
 
   const planCode = (profile?.plan_code || "").toString();
-  const roleCode = (profile?.role_code || "").toString();
 
-  // Plan (detalles)
   const { data: plan } = planCode
     ? await supabase.from("plans").select("code, name, max_products, max_services, max_images_per_product, max_images_per_service, credits_monthly").eq("code", planCode).single()
     : { data: null } as const;
 
-  // Conteo de productos del usuario
   const { count: productsCount } = await supabase
     .from("products")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  // Conteo de servicios del usuario (publicados)
   const { count: servicesCount } = await supabase
     .from("services")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
     .eq("published", true);
 
-  // Uso mensual de créditos (tabla usage_counters)
   const now = new Date();
-  const periodYM = now.getFullYear() * 100 + (now.getMonth() + 1); // YYYYMM
+  const periodYM = now.getFullYear() * 100 + (now.getMonth() + 1);
   const { data: usage } = await supabase.from("usage_counters" as any).select("credits_used").eq("user_id", user.id).eq("period_ym", periodYM).maybeSingle();
   const creditsUsed = (usage as any)?.credits_used ?? 0;
   const creditsBalance = (profile as any)?.credits_balance ?? 0;
@@ -136,213 +221,203 @@ export default async function PlanPage({ searchParams }: Props) {
   const maxImagesPerProduct = plan?.max_images_per_product ?? null;
   const maxImagesPerService = (plan as any)?.max_images_per_service ?? null;
 
-  // Activación y expiración (1 mes desde activación)
-  // Fallback temporal: si no existe plan_activated_at, usamos updated_at cuando hay plan
   const activatedAt = planCode ? ((profile as any)?.plan_activated_at ?? (profile as any)?.updated_at ?? null) : null;
-  let expiresAt: string | null = null;
-  if (activatedAt) {
-    const d = new Date(activatedAt);
-    d.setMonth(d.getMonth() + 1);
-    expiresAt = d.toISOString();
-  }
-
-  // Rotular plan de forma amigable
-  const planMap: Record<string, string> = {
-    free: "Básico",
-    basic: "Básico",
-    plus: "Plus",
-    enterprise: "Plus",
-    deluxe: "Deluxe",
-    diamond: "Deluxe",
-    premium: "Plus",
-    pro: "Plus",
-  };
-  const planLabel = plan ? (planMap[plan.code.toLowerCase()] ?? plan.name ?? plan.code) : (planCode ? (planMap[planCode.toLowerCase()] ?? planCode) : "Sin plan");
-
-  // Flags y estados derivados
-  const lc = (planCode || plan?.code || "").toLowerCase();
-  const isBasicPlan = lc === "free" || lc === "basic" || (planLabel || "").toLowerCase().includes("básico");
-  const isPlusOrDeluxe = ["plus", "enterprise", "deluxe"].includes(lc) || /(plus|deluxe)/i.test(planLabel || "");
   const renewsAt = (profile as any)?.plan_renews_at ?? null;
+
+  const planLabel = friendlyPlanLabel(planCode, plan?.name);
+
+  const lc = (planCode || plan?.code || "").toLowerCase();
+  const isBasicPlan = lc === "free" || lc === "basic" || planLabel.toLowerCase().includes("básico");
+  const isPlusOrDeluxe = ["plus", "enterprise", "deluxe"].includes(lc) || /(plus|deluxe)/i.test(planLabel);
   const mpStatus = (profile as any)?.mp_subscription_status ?? null as string | null;
-  const mpStatusLabel = mpStatus
-    ? ({ authorized: "Autorizada", pending: "Pendiente", paused: "Pausada", cancelled: "Cancelada" } as Record<string, string>)[mpStatus] ?? mpStatus
-    : "—";
   const hasPending = Boolean(profile?.plan_pending_code);
 
-  // Rol: normalizar a buyer/seller usando metadata con fallback a profile.role_code
   const roleMeta = (user.user_metadata?.role_code || "").toString();
   const roleFromProfile = (profile?.role_code || "").toString();
   const roleRaw = roleMeta || roleFromProfile;
   const isSeller = normalizeRoleFromMetadata({ role_code: roleRaw }) === "seller" || !!planCode || (productsCount ?? 0) > 0;
-  const roleLabel = isSeller ? "Vendedor" : "Comprador";
 
-  // Cargar planes disponibles (usando Supabase admin directamente para evitar 403 en SSR)
-  let plans: Array<{ code: string; name: string | null; price_monthly_cents?: number | null; price_yearly_cents?: number | null; currency?: string | null } & Record<string, any>> = [];
+  // Cargar planes disponibles
+  let plans: PlanRow[] = [];
   try {
     const { data: plansData } = await supabase
       .from("plans")
       .select("code, name, max_products, max_images_per_product, credits_monthly, price_monthly_cents, price_yearly_cents, currency")
       .order("code", { ascending: true });
-    plans = Array.isArray(plansData) ? plansData : [];
+    const raw = Array.isArray(plansData) ? plansData : [];
+    plans = sortPlans(raw as PlanRow[]);
   } catch { }
 
   return (
-    <div className="mx-auto max-w-4xl p-4 space-y-4 sm:p-6 sm:space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Mi Plan</h1>
-          <p className="text-sm text-muted-foreground sm:text-base">Gestiona tu suscripción y uso</p>
-        </div>
+    <div className="mx-auto max-w-4xl p-4 space-y-5 sm:p-6 sm:space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Mi Plan</h1>
+        <p className="text-sm text-muted-foreground">Gestiona tu suscripción y uso</p>
       </div>
 
+      {/* Alertas de estado (cancelación exitosa, advertencia MP) */}
       {showCancelSuccess && (
         <Alert className="border-green-200 bg-green-50 text-green-800">
           <AlertTitle>Cancelación programada</AlertTitle>
           <AlertDescription>
-            Tu suscripción fue cancelada correctamente. Tu plan cambiará a <span className="font-medium">Básico</span> el {formatDate((profile as any)?.plan_pending_effective_at)}. Hasta entonces, mantendrás los beneficios del plan actual.
+            Tu suscripción fue cancelada correctamente. Tu plan cambiará a{" "}
+            <span className="font-medium">Básico</span> el{" "}
+            {formatDate((profile as any)?.plan_pending_effective_at)}. Hasta entonces,
+            mantendrás los beneficios del plan actual.
           </AlertDescription>
         </Alert>
       )}
 
       {showMpWarning && (
         <Alert className="border-yellow-200 bg-yellow-50 text-yellow-900">
+          <AlertCircle className="h-4 w-4" />
           <AlertTitle>Atención: verificación con Mercado Pago</AlertTitle>
           <AlertDescription>
-            Detectamos que no pudimos confirmar la cancelación en Mercado Pago. Por favor verifica tu método de pago o vuelve a intentar más tarde. Si el problema persiste, contáctanos para evitar cargos recurrentes.
+            No pudimos confirmar la cancelación en Mercado Pago. Verificá tu método de pago o volvé a intentar más tarde. Si el problema persiste,{" "}
+            <Link href="/contacto" className="underline font-medium">contactanos</Link>.
           </AlertDescription>
         </Alert>
       )}
 
+      {/* ── Sección 1: Plan actual ─────────────────────────── */}
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <CardTitle className="text-lg">Plan actual</CardTitle>
-              <CardDescription>Detalles y consumo</CardDescription>
+              <CardDescription>Uso de recursos de tu cuenta</CardDescription>
             </div>
             <PlanBadge planLabel={planLabel} planCode={planCode} />
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* Tarjeta 'Rol' removida a pedido */}
-            <div className="rounded-md border p-4">
-              <div className="text-muted-foreground">Productos</div>
-              <div className="font-medium">
-                {productsCount ?? 0}{maxProducts ? ` / ${maxProducts}` : ""}
-              </div>
-            </div>
-            <div className="rounded-md border p-4">
-              <div className="text-muted-foreground">Servicios</div>
-              <div className="font-medium">
-                {servicesCount ?? 0}{maxServices ? ` / ${maxServices}` : ""}
-              </div>
-            </div>
-            <div className="rounded-md border p-4">
-              <div className="text-muted-foreground">Imágenes por producto</div>
-              <div className="font-medium">{maxImagesPerProduct ?? "—"}</div>
-            </div>
-            <div className="rounded-md border p-4">
-              <div className="text-muted-foreground">Imágenes por servicio</div>
-              <div className="font-medium">{maxImagesPerService ?? "—"}</div>
-            </div>
-            <div className="rounded-md border p-4">
-              <div className="text-muted-foreground">Créditos usados (mes)</div>
-              {isBasicPlan || !creditsMonthly ? (
-                <div className="font-medium text-muted-foreground">Créditos no disponibles en Plan Básico</div>
-              ) : (
-                <div className="font-medium">{creditsUsed}{creditsMonthly ? ` / ${creditsMonthly}` : ""}</div>
-              )}
-            </div>
-            <div className="rounded-md border p-4">
-              <div className="text-muted-foreground">Saldo de créditos</div>
-              {isBasicPlan || !creditsMonthly ? (
-                <div className="font-medium text-muted-foreground">No disponible</div>
-              ) : (
-                <div className="font-medium">{creditsBalance}</div>
-              )}
-            </div>
-            {/* Tarjeta de ofertas removida */}
-            {isPlusOrDeluxe && (
+        <CardContent className="space-y-4">
+          {/* Métricas con barras */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <UsageBar
+              used={productsCount ?? 0}
+              max={maxProducts}
+              label="Productos"
+              icon={Package}
+            />
+            <UsageBar
+              used={servicesCount ?? 0}
+              max={maxServices}
+              label="Servicios"
+              icon={Briefcase}
+            />
+            {!isBasicPlan && creditsMonthly > 0 && (
               <>
-                <div className="rounded-md border p-4">
-                  <div className="text-muted-foreground">Activación</div>
-                  <div className="font-medium">{formatDate(activatedAt)}</div>
-                </div>
-                <div className="rounded-md border p-4">
-                  <div className="text-muted-foreground">Expira</div>
-                  <div className="font-medium">{formatDate(expiresAt)}</div>
+                <UsageBar
+                  used={creditsUsed}
+                  max={creditsMonthly}
+                  label="Créditos usados (este mes)"
+                  icon={Coins}
+                />
+                <div className="rounded-xl border bg-card p-4 flex items-start gap-3">
+                  <div className="mt-0.5 rounded-md bg-muted p-1.5">
+                    <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">Saldo de créditos</div>
+                    <div className="text-sm font-semibold">{creditsBalance}</div>
+                  </div>
                 </div>
               </>
             )}
-            {/* Bloque de 'Suscripción' y 'Renueva' removido a pedido */}
+            {isBasicPlan && (
+              <div className="sm:col-span-2 rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                Los créditos y funciones avanzadas están disponibles en planes Plus y Deluxe.
+              </div>
+            )}
           </div>
 
-          {isPlusOrDeluxe && !activatedAt && (
-            <p className="text-xs text-muted-foreground">
-              Para calcular la expiración, se recomienda guardar la fecha de activación en <code>profiles.plan_activated_at</code> cuando se asigne o cambie el plan.
-            </p>
+          {/* Datos del ciclo de facturación */}
+          {isPlusOrDeluxe && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 pt-1">
+              {activatedAt && (
+                <InfoCard
+                  label="Activo desde"
+                  value={formatDate(activatedAt)}
+                  icon={CalendarDays}
+                />
+              )}
+              {renewsAt && (
+                <InfoCard
+                  label="Próxima renovación"
+                  value={formatDate(renewsAt)}
+                  icon={RefreshCw}
+                />
+              )}
+            </div>
           )}
 
+          {/* Cambio programado */}
           {profile?.plan_pending_code && (
-            <div className="rounded-md border p-4 text-sm bg-muted/30">
-              <div className="font-medium">Cambio programado</div>
-              <div className="text-muted-foreground">
-                Tu plan cambiará a <span className="font-medium">{profile.plan_pending_code}</span> el {formatDate(profile.plan_pending_effective_at)}.
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+              <Clock className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium text-amber-900">Cambio de plan programado</p>
+                <p className="text-amber-800 mt-0.5">
+                  Tu plan pasará a{" "}
+                  <span className="font-semibold">
+                    {friendlyPlanLabel(profile.plan_pending_code)}
+                  </span>{" "}
+                  el {formatDate(profile.plan_pending_effective_at)}.
+                  Hasta entonces seguirás con los beneficios actuales.
+                </p>
               </div>
             </div>
           )}
-
-          {isPlusOrDeluxe && mpStatus !== "cancelled" && (
-            <div className="flex items-center justify-start pt-1">
-              <CancelSubscriptionButton disabled={hasPending} />
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* Selector de planes */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Cambiar de plan</CardTitle>
-          <CardDescription>El cambio se aplicará al cierre de tu ciclo actual.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {plans.map((p: any) => {
-              const code = (p.code || "").toLowerCase();
-              const isFree = !p.price_monthly_cents || p.price_monthly_cents === 0;
-              const label = p.name || p.code || "Plan";
-              const isCurrent = planCode && planCode.toLowerCase() === code;
-              const isDisabled = Boolean(isCurrent || hasPending);
-              return (
-                <div key={p.code} className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <div className="font-medium">{label}</div>
-                    <div className="text-xs text-muted-foreground">{code}</div>
-                  </div>
-                  {isDisabled ? (
-                    <Button size="sm" variant="secondary" disabled>
-                      {isCurrent ? "Plan actual" : "Cambio pendiente"}
-                    </Button>
-                  ) : (
-                    <Button asChild size="sm" variant="default">
-                      <Link href="/plans" prefetch={false}>
-                        {"Cambiar / Contratar"}
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-            {plans.length === 0 && (
-              <div className="text-sm text-muted-foreground">No hay planes configurados.</div>
+      {/* ── Sección 2: Cambiar plan ────────────────────────── */}
+      {isSeller && (
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Cambiar plan</CardTitle>
+            <CardDescription>
+              El cambio se programará para el próximo ciclo de facturación.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PlanSelector
+              plans={plans}
+              currentPlanCode={planCode}
+              hasPending={hasPending}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Sección 3: Zona peligrosa ──────────────────────── */}
+      {isPlusOrDeluxe && mpStatus !== "cancelled" && (
+        <Card className="border-red-100">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-red-700">Zona peligrosa</CardTitle>
+            <CardDescription>
+              Al cancelar tu suscripción, tu plan pasará a{" "}
+              <span className="font-medium">Básico (gratuito)</span>{" "}
+              {renewsAt
+                ? `el ${formatDate(renewsAt)}`
+                : "al cierre de tu ciclo actual"}.{" "}
+              Hasta entonces conservarás todos los beneficios actuales.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CancelSubscriptionButton
+              disabled={hasPending}
+              renewsAt={renewsAt}
+            />
+            {hasPending && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                No podés cancelar mientras hay un cambio de plan pendiente.
+              </p>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
-

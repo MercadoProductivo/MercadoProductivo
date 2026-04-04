@@ -1,6 +1,16 @@
 /**
  * Sistema de rate limiting con soporte para Redis/Vercel KV
  * Fallback automático a memoria en desarrollo
+ *
+ * ⚠️ ADVERTENCIA: En producción (Vercel serverless), el fallback a memoria
+ * NO sincroniza entre instancias de lambda. Si KV_REST_API_URL y
+ * KV_REST_API_TOKEN no están configurados, el rate limit solo opera
+ * por instancia y NO es efectivo a nivel global.
+ *
+ * Para habilitar rate limiting global, configurar en Vercel:
+ *   - KV_REST_API_URL
+ *   - KV_REST_API_TOKEN
+ * Ver: https://vercel.com/docs/storage/vercel-kv
  */
 
 import { logger } from "./logger";

@@ -41,11 +41,9 @@ export default async function ServicesDashboardPage() {
         postal_code: "CP",
       };
       Object.entries(requiredMap).forEach(([key, label]) => {
-        // @ts-ignore
-        if (!data?.[key] || String(data?.[key]).trim().length === 0) missingLabels.push(label);
+        const val = (data as Record<string, unknown>)?.[key];
+        if (!val || String(val).trim().length === 0) missingLabels.push(label);
       });
-      // Plan actual (si existe)
-      // @ts-ignore
       planCode = (data?.plan_code || "").toString() || null;
     }
   } catch {}
@@ -69,7 +67,7 @@ export default async function ServicesDashboardPage() {
         .select("max_services")
         .eq("code", planCode)
         .maybeSingle();
-      const ms = (plan as any)?.max_services;
+      const ms = plan?.max_services;
       maxServices = typeof ms === "number" ? ms : (ms != null ? Number(ms) : null);
     } catch {}
   }
@@ -88,7 +86,7 @@ export default async function ServicesDashboardPage() {
 
   // Ordenar: destacados vigentes primero, luego por fecha de creación desc
   const nowDate = new Date();
-  const sortedServices = (services ?? []).slice().sort((a: any, b: any) => {
+  const sortedServices = (services ?? []).slice().sort((a, b) => {
     const aFeat = a?.featured_until && new Date(a.featured_until) > nowDate ? 1 : 0;
     const bFeat = b?.featured_until && new Date(b.featured_until) > nowDate ? 1 : 0;
     if (aFeat !== bFeat) return bFeat - aFeat; // primero destacados
@@ -104,7 +102,7 @@ export default async function ServicesDashboardPage() {
   // Construir mapa de imagen principal por servicio desde service_images
   const primaryImageMap: Record<string, string | null> = {};
   try {
-    const ids = (services ?? []).map((s: any) => s.id);
+    const ids = (services ?? []).map((s) => s.id);
     if (ids.length) {
       const { data: imgs } = await supabase
         .from("service_images")
@@ -112,10 +110,8 @@ export default async function ServicesDashboardPage() {
         .in("service_id", ids)
         .order("id", { ascending: true });
       for (const row of imgs || []) {
-        // @ts-ignore
-        if (!primaryImageMap[row.service_id]) {
-          // @ts-ignore
-          primaryImageMap[row.service_id] = row.url as string;
+        if (row.service_id && !primaryImageMap[row.service_id]) {
+          primaryImageMap[row.service_id] = row.url ?? null;
         }
       }
     }
@@ -153,12 +149,9 @@ export default async function ServicesDashboardPage() {
         <div className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700 space-y-1">
           <div>No se pudieron cargar tus servicios: {servicesError.message}</div>
           {(() => {
-            // @ts-ignore
-            const code = (servicesError as any)?.code;
-            // @ts-ignore
-            const details = (servicesError as any)?.details;
-            // @ts-ignore
-            const hint = (servicesError as any)?.hint;
+            // PostgrestError tiene code, details y hint documentados
+            const pgErr = servicesError as { message: string; code?: string; details?: string; hint?: string };
+            const { code, details, hint } = pgErr;
             if (code || details || hint) {
               return (
                 <pre className="whitespace-pre-wrap break-words text-xs">
@@ -179,7 +172,7 @@ export default async function ServicesDashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {sortedServices.map((s: any) => (
+          {sortedServices.map((s) => (
             <div key={s.id} className="overflow-hidden rounded border bg-background">
               <div className="relative h-32 w-full sm:h-40">
                 {primaryImageMap[s.id] ? (

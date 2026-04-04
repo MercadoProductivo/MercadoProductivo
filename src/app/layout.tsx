@@ -47,6 +47,10 @@ export const metadata: Metadata = {
     title: "Mercado Productivo",
     description: "Plataforma que conecta vendedores con compradores",
   },
+  // Migrado desde head.tsx (Pages Router) — compatibilidad Android PWA
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
@@ -58,7 +62,6 @@ export const viewport: Viewport = {
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
-export const runtime = 'nodejs';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   // Layout raíz estático (sin bloqueo de auth)

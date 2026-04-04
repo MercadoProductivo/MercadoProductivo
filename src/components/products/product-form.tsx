@@ -476,7 +476,8 @@ export default function ProductForm({ missingLabels = [] }: ProductFormProps) {
           <div className="grid grid-cols-4 gap-2 mt-2">
             {files.map((file, i) => (
               <div key={i} className="relative group aspect-square rounded overflow-hidden border">
-                <img src={URL.createObjectURL(file)} alt="preview" className="object-cover w-full h-full" />
+                {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL local, no compatible con next/image */}
+                <img src={URL.createObjectURL(file)} alt={`Preview imagen ${i + 1}`} className="object-cover w-full h-full" width={120} height={120} />
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); removeFile(i); }}

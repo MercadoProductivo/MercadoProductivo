@@ -78,6 +78,8 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate onInvalid={(e) => e.preventDefault()} className="grid gap-4">
+      <fieldset className="grid gap-4 border-0 p-0 m-0">
+        <legend className="sr-only">Formulario de contacto</legend>
       <div className="grid gap-2">
         <Label htmlFor="nombre">Nombre Completo <span className="text-red-500">*</span></Label>
         <Input
@@ -144,6 +146,7 @@ export default function ContactForm() {
           <p role="alert" id="mensaje-error" className="text-sm text-destructive">{errors.mensaje}</p>
         )}
       </div>
+      </fieldset>
       <SubmitButton isLoading={loading} loadingText="Enviando...">
         Enviar Mensaje
       </SubmitButton>

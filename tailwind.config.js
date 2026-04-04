@@ -6,6 +6,16 @@ module.exports = {
 		"./src/components/**/*.{js,ts,jsx,tsx,mdx}",
 		"./src/app/**/*.{js,ts,jsx,tsx,mdx}",
 	],
+
+	// Clases generadas dinámicamente que Tailwind JIT debe incluir siempre
+	safelist: [
+		"bg-orange-600", "bg-sky-600", "bg-violet-600", "bg-emerald-600",
+		"bg-orange-500", "bg-sky-500", "bg-violet-500", "bg-emerald-500",
+		"hover:border-orange-500", "hover:border-sky-500", "hover:border-violet-500", "hover:border-emerald-500",
+		"border-orange-300", "border-sky-300", "border-violet-300", "border-emerald-300",
+		"text-orange-700", "text-sky-700", "text-violet-700", "text-emerald-700",
+		"hover:shadow-orange-100", "hover:shadow-sky-100", "hover:shadow-violet-100", "hover:shadow-emerald-100",
+	],
 	theme: {
 		extend: {
 			colors: {

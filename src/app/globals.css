@@ -20,7 +20,8 @@
   --secondary-foreground: 210 40% 98%;
 
   --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  /* Oscurecido de 46.9% → 40% para garantizar ratio ≥4.5:1 sobre fondos de gradiente claro (WCAG AA) */
+  --muted-foreground: 215.4 16.3% 40%;
 
   --accent: 201 96% 32%;     /* #0369A1 (CTA/Accent) */
   --accent-foreground: 210 40% 98%;
@@ -28,8 +29,9 @@
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
+  /* Oscurecido de 91.4% → 85% para que los bordes de componentes cumplan ratio 3:1 (WCAG AA UI) */
+  --border: 214.3 31.8% 85%;
+  --input: 214.3 31.8% 85%;
   --ring: 201 96% 32%;
 
   --radius: 0.75rem;
@@ -107,6 +109,18 @@ body.react-remove-scroll-body {
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Respeta preferencia de reducción de movimiento (WCAG 2.3 / 2.5.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

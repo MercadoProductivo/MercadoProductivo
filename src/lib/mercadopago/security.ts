@@ -16,7 +16,16 @@ export async function validateMPSignature(
     const secret = process.env.MP_WEBHOOK_SECRET;
     const allowTests = process.env.MP_WEBHOOK_ALLOW_TESTS === "true";
 
-    if (!secret) return true; // config legacy o dev sin secreto
+    if (!secret) {
+        // SEGURIDAD: En producción, la ausencia del secreto es un fallo de configuración,
+        // NO un bypass. Rechazar la solicitud para evitar fraudes de billing.
+        if (process.env.NODE_ENV === "production") {
+            console.error("[MP Webhook] CRÍTICO: MP_WEBHOOK_SECRET no está configurado. Rechazando request.");
+            return false;
+        }
+        // Solo en desarrollo/test se permite sin secreto
+        return true;
+    }
 
     const sigHeader =
         (req.headers.get("x-signature") ||

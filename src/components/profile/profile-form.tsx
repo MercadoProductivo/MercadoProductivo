@@ -82,9 +82,13 @@ type ProfileFormProps = {
   registerSubmit?: (submit: () => void) => void;
   registerReset?: (reset: () => void) => void;
   onSaved?: () => void;
+  /** Notifica al padre cuando el formulario tiene cambios sin guardar */
+  onDirtyChange?: (isDirty: boolean) => void;
+  /** Notifica al padre cuándo está guardando */
+  onSavingChange?: (isSaving: boolean) => void;
 };
 
-export default function ProfileForm({ disabled = false, hideInternalSubmit = false, registerSubmit, registerReset, onSaved }: ProfileFormProps) {
+export default function ProfileForm({ disabled = false, hideInternalSubmit = false, registerSubmit, registerReset, onSaved, onDirtyChange, onSavingChange }: ProfileFormProps) {
   const supabase = useMemo(() => createClient(), []);
   const [saving, setSaving] = useState(false);
   const [savingExportador, setSavingExportador] = useState(false);
@@ -115,6 +119,11 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const AVATAR_BUCKET = "avatars";
   const AVATAR_MAX_MB = 5;
+
+  // Notificar al padre cuando cambia isDirty
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
 
   function fieldAttrs<K extends keyof ProfileFormValues>(name: K) {
     const state = form.getFieldState(name as any, form.formState);
@@ -395,6 +404,7 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
 
   const onSubmit = useCallback(async (values: ProfileFormValues) => {
     setSaving(true);
+    onSavingChange?.(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No autenticado");
@@ -483,8 +493,9 @@ export default function ProfileForm({ disabled = false, hideInternalSubmit = fal
       toast.error(msg);
     } finally {
       setSaving(false);
+      onSavingChange?.(false);
     }
-  }, [form, supabase, onSaved]);
+  }, [form, supabase, onSaved, onSavingChange]);
 
   // Exponer submit externo si se solicita
   useEffect(() => {

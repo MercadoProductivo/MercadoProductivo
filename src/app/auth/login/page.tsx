@@ -11,8 +11,8 @@ export const metadata = {
 export default async function Page({ searchParams }: { searchParams?: Promise<{ verified?: string; check_email?: string; email?: string }> }) {
   const sp = await searchParams;
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
     redirect("/");
   }
   const showVerified = sp?.verified === "1";

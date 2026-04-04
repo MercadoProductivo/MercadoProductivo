@@ -10,8 +10,7 @@ try {
 
 const nextConfig = {
   reactStrictMode: true,
-  // Validaciones de lint y TypeScript habilitadas en build para mayor seguridad
-  typescript: { ignoreBuildErrors: true },
+  // TypeScript errors HABILITADOS en build. No silenciar errores.
   // Exponer envs públicos al cliente en tiempo de build
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -81,7 +80,8 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.pusher.com https://cdn.vercel-insights.com https://va.vercel-scripts.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+              // TODO: Migrar a nonce-based CSP para eliminar 'unsafe-inline'. Ver: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
+              "script-src 'self' 'unsafe-inline' https://js.pusher.com https://cdn.vercel-insights.com https://va.vercel-scripts.com https://challenges.cloudflare.com https://static.cloudflareinsights.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https://*.supabase.co https://images.unsplash.com https://plus.unsplash.com https://via.placeholder.com",

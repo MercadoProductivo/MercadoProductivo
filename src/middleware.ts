@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { normalizeRoleFromMetadata } from "@/lib/auth/role";
 
@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
         getAll() {
           return req.cookies.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+        setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
           response = NextResponse.next({
             request: req,
@@ -30,10 +30,11 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // Esto refresca la sesión si es necesario (rotación de tokens)
+  // getUser() verifica el JWT criptográficamente contra el servidor (seguro).
+  // getSession() solo lee el cookie sin verificar — no usar para proteger rutas.
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Bloquear APIs legacy del chat v1
   if (
@@ -66,7 +67,7 @@ export async function middleware(req: NextRequest) {
 
   // Proteger rutas del dashboard y perfil
   if (
-    !session &&
+    !user &&
     (req.nextUrl.pathname.startsWith("/dashboard") ||
       req.nextUrl.pathname.startsWith("/profile"))
   ) {
@@ -80,7 +81,7 @@ export async function middleware(req: NextRequest) {
 
   // Evitar acceso a login/register si ya hay sesión iniciada
   if (
-    session &&
+    user &&
     (req.nextUrl.pathname === "/auth/login" || req.nextUrl.pathname === "/auth/register")
   ) {
     const url = req.nextUrl.clone();

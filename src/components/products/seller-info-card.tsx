@@ -113,14 +113,12 @@ export default function SellerInfoCard({ seller, productTitle }: { seller: Publi
             size="sm"
             className="w-full sm:w-auto"
           />
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="w-full sm:w-auto border-amber-500 text-amber-600 hover:bg-amber-500/10"
+          <Link
+            href={`/vendedores/${seller.id}`}
+            className="inline-flex items-center justify-center rounded-md border border-amber-500 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 w-full sm:w-auto no-underline"
           >
-            <Link href={`/vendedores/${seller.id}`}>Ver perfil</Link>
-          </Button>
+            Ver perfil
+          </Link>
         </div>
 
         {paid && (

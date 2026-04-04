@@ -51,7 +51,7 @@ export default function WhatsAppButton({ sellerPlanCode, sellerPhone, productTit
       size === "sm" ? "h-8 px-2 py-1 text-xs" : "h-9 px-3 py-1.5 text-sm",
       className
     )}>
-      <a href={href} target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp">
+      <a href={href} target="_blank" rel="noopener noreferrer" aria-label={`Contactar al vendedor por WhatsApp sobre ${product}`}>
         <WhatsAppIcon />
         <span>WhatsApp</span>
       </a>

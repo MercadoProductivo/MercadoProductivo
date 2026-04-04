@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_signature" }, { status: 401 });
     }
 
-    // 4. Determinar Tipo de evento
+    // 4. Determinar tipo de evento
     const typeRaw = (body?.type as string | undefined) || (body?.topic as string | undefined) || "";
     const type = typeRaw.toLowerCase();
 
@@ -47,11 +47,14 @@ export async function POST(req: Request) {
       // Fallback: si no viene type, asumimos preapproval (comportamiento legacy)
       await BillingService.processPreapproval(id);
     }
+
+    // I1: Solo retornar 200 si el procesamiento fue exitoso
+    return NextResponse.json({ ok: true, id: id || null });
   } catch (e) {
     console.error("[Webhook] Error procesando request:", e);
+    // I1: Retornar 500 para que MP reintente automáticamente (no 200)
+    return NextResponse.json({ ok: false, error: "processing_error" }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true, id: id || null });
 }
 
 // GET removido: era explotable sin autenticación de firma

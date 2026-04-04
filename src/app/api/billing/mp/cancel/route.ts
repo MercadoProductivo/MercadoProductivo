@@ -41,6 +41,12 @@ export async function POST(req: Request) {
       .eq("id", user.id)
       .maybeSingle();
 
+    // I3: Verificación defensiva — garantiza que el admin client no afecta otro usuario
+    if (profile && (profile as any).id !== user.id) {
+      console.error("[Cancel] SECURITY: profile.id !== user.id", { profileId: (profile as any).id, userId: user.id });
+      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    }
+
     const now = new Date();
 
     // Determinar fecha efectiva
